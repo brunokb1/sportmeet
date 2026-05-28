@@ -148,12 +148,15 @@ body {
   height: 32px;
   border-radius: 50%;
   background: var(--bg);
+  border: none;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   color: var(--text-2);
   cursor: pointer;
+  text-decoration: none;
 }
 .back-btn svg { width: 20px; height: 20px; }
 
@@ -543,6 +546,27 @@ body {
   margin-bottom: 14px;
 }
 .results-meta b { color: var(--text-2); }
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+  text-align: center;
+  gap: 8px;
+}
+.empty-icon { font-size: 40px; }
+.empty-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.empty-sub {
+  font-size: 13px;
+  color: var(--text-3);
+  line-height: 1.5;
+}
 
 .result-card {
   background: var(--surface);

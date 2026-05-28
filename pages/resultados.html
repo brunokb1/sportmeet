@@ -27,10 +27,10 @@
 
   <div class="screen-content">
 
-    <p class="results-meta" id="results-meta"><b>2 resultados</b> encontrados</p>
+    <p class="results-meta" id="results-meta"><b>1 resultado</b> encontrado</p>
 
-    <!-- Resultado 1 -->
-    <div class="result-card">
+    <!-- Futebol com o Bruno — visibilidade controlada por JS -->
+    <div id="result-futebol" class="result-card">
       <div class="result-thumb" style="background:var(--green-light)">⚽</div>
       <div class="result-info">
         <div class="result-name">Futebol com o Bruno</div>
@@ -49,24 +49,11 @@
       </div>
     </div>
 
-    <!-- Resultado 2 -->
-    <div class="result-card">
-      <div class="result-thumb" style="background:var(--green-light)">⚽</div>
-      <div class="result-info">
-        <div class="result-name">Futebol Society</div>
-        <div class="result-addr">Rua Princesa Isabel, 450</div>
-        <div class="result-tags">
-          <span class="tag">Dom · 19:00</span>
-          <span class="tag open">Aberto</span>
-        </div>
-        <div class="result-creator">
-          <div class="avatar av-sm av-orange">P</div>
-          Criado por Pedro
-        </div>
-      </div>
-      <div class="result-actions">
-        <a href="detalhes-busca.html" class="link-orange">VER DETALHES ›</a>
-      </div>
+    <!-- Estado vazio — exibido por JS quando não há match -->
+    <div id="results-empty" style="display:none" class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">Nenhum resultado encontrado</div>
+      <div class="empty-sub">Tente buscar por "futebol" ou selecione um dos filtros disponíveis.</div>
     </div>
 
     <a href="buscar.html" class="btn btn-outline mt-8">AJUSTAR FILTROS</a>

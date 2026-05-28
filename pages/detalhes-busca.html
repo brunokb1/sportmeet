@@ -19,9 +19,9 @@
   </div>
 
   <div class="screen-header">
-    <a href="resultados.html" class="back-btn">
+    <button class="back-btn" onclick="window.history.back()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    </a>
+    </button>
     <span class="screen-title">Futebol com o Bruno</span>
   </div>
 
@@ -74,7 +74,12 @@
       </div>
     </div>
 
-    <a href="adicionado-agenda.html" class="btn btn-orange" onclick="sessionStorage.setItem('sm_futebol_adicionado','true')">ADICIONAR À AGENDA</a>
+    <!-- Botão: ainda não adicionado -->
+    <a href="adicionado-agenda.html" class="btn btn-orange" id="btn-add-agenda"
+       onclick="sessionStorage.setItem('sm_futebol_adicionado','true')">ADICIONAR À AGENDA</a>
+
+    <!-- Botão: já adicionado — seguir fluxo de cancelamento -->
+    <a href="confirmar-cancelamento.html?ev=futebol" class="btn btn-red" id="btn-cancel-evento" style="display:none">CANCELAR EVENTO</a>
 
   </div>
 
