@@ -53,6 +53,10 @@
         <div class="mini-event" id="week-corrida" style="display:none">
           <span class="dot dot-blue"></span><span id="week-corrida-text">Corrida · Qua</span>
         </div>
+        <!-- Aparece só após aceitar evento do feed -->
+        <div class="mini-event" id="week-feed" style="display:none">
+          <span class="dot dot-orange"></span><span id="week-feed-text">Evento · Feed</span>
+        </div>
       </a>
 
       <!-- Convites → notificações -->
@@ -77,7 +81,7 @@
     <!-- Feed header -->
     <div class="feed-header">
       <span class="feed-title-text">Feed · Eventos para você</span>
-      <span class="badge-new">12 novos</span>
+      <span class="badge-new" id="badge-new">12 novos</span>
     </div>
 
     <!-- Swipe stack — preenchido por JS -->

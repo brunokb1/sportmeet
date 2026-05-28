@@ -14,6 +14,8 @@ const FEED_CARDS = [
 let feedIndex = parseInt(sessionStorage.getItem('sm_feed_index') || '0', 10);
 if (feedIndex >= 5) feedIndex = 0; // guard against stale value
 
+let newCount = parseInt(sessionStorage.getItem('sm_new_count') || '12', 10);
+
 function buildCard(card, posClass, id) {
   return `
     <div class="swipe-card ${posClass}" ${id ? 'id="'+id+'"' : ''}>
@@ -60,18 +62,39 @@ function renderFeedStack() {
   stack.innerHTML = html;
 }
 
+function syncNewBadge() {
+  const badge = document.getElementById('badge-new');
+  if (!badge) return;
+  if (newCount <= 0) { badge.style.display = 'none'; return; }
+  badge.textContent = newCount + ' novo' + (newCount !== 1 ? 's' : '');
+  badge.style.display = '';
+}
+
 function initFeedCards() {
   if (!document.getElementById('swipe-stack')) return;
   renderFeedStack();
+  syncNewBadge();
+
   document.getElementById('btn-accept')?.addEventListener('click', () => {
+    const accepted = FEED_CARDS[feedIndex]; // capture before increment
+    sessionStorage.setItem('sm_feed_accepted', JSON.stringify(accepted));
     feedIndex++;
+    newCount = Math.max(0, newCount - 1);
     sessionStorage.setItem('sm_feed_index', feedIndex);
-    dismissCard('right', () => { window.location.href = 'pages/adicionado-agenda.html'; });
+    sessionStorage.setItem('sm_new_count',  newCount);
+    dismissCard('right', () => {
+      syncNewBadge();
+      window.location.href = 'pages/adicionado-agenda.html';
+    });
   });
+
   document.getElementById('btn-reject')?.addEventListener('click', () => {
     dismissCard('left', () => {
       feedIndex++;
+      newCount = Math.max(0, newCount - 1);
       sessionStorage.setItem('sm_feed_index', feedIndex);
+      sessionStorage.setItem('sm_new_count',  newCount);
+      syncNewBadge();
       renderFeedStack();
     });
   });
@@ -180,7 +203,10 @@ function updateEventHighlight(day) {
 function updateAgendaEvents() {
   const futebolRow = document.getElementById('agenda-futebol');
   const corridaRow = document.getElementById('agenda-corrida');
+  const feedRow    = document.getElementById('agenda-feed');
+
   if (futebolRow) futebolRow.style.display = sessionStorage.getItem('sm_futebol_adicionado') === 'true' ? '' : 'none';
+
   if (corridaRow) {
     corridaRow.style.display = sessionStorage.getItem('sm_corrida_criada') === 'true' ? '' : 'none';
     if (sessionStorage.getItem('sm_corrida_criada') === 'true') {
@@ -193,15 +219,37 @@ function updateAgendaEvents() {
       } catch(err) {}
     }
   }
+
+  if (feedRow) {
+    const raw = sessionStorage.getItem('sm_feed_accepted');
+    if (raw) {
+      feedRow.style.display = '';
+      try {
+        const c = JSON.parse(raw);
+        setText('agenda-feed-name', c.name);
+        setText('agenda-feed-sub',  c.time + ' · ' + c.place);
+        const parts = (c.time || '').split('·');
+        const dayAbbr = (parts[0] || '').trim().substring(0, 3).toUpperCase();
+        const timeStr = (parts[1] || '').trim();
+        if (dayAbbr) setText('agenda-feed-day', dayAbbr);
+        if (timeStr) setText('agenda-feed-num', timeStr);
+      } catch(err) {}
+    } else {
+      feedRow.style.display = 'none';
+    }
+  }
 }
 
 /* ============================================================
    Home — "Esta semana" dinâmica
    ============================================================ */
 function updateHomeEvents() {
-  const f = document.getElementById('week-futebol');
-  const c = document.getElementById('week-corrida');
+  const f  = document.getElementById('week-futebol');
+  const c  = document.getElementById('week-corrida');
+  const fd = document.getElementById('week-feed');
+
   if (f) f.style.display = sessionStorage.getItem('sm_futebol_adicionado') === 'true' ? '' : 'none';
+
   if (c) {
     c.style.display = sessionStorage.getItem('sm_corrida_criada') === 'true' ? '' : 'none';
     if (sessionStorage.getItem('sm_corrida_criada') === 'true') {
@@ -212,6 +260,20 @@ function updateHomeEvents() {
           setText('week-corrida-text', d.ativ + ' · ' + (dayPart || 'Qua'));
         }
       } catch(err) {}
+    }
+  }
+
+  if (fd) {
+    const raw = sessionStorage.getItem('sm_feed_accepted');
+    if (raw) {
+      fd.style.display = '';
+      try {
+        const c2 = JSON.parse(raw);
+        const dayPart = (c2.time || '').split('·')[0].trim();
+        setText('week-feed-text', c2.sport + ' ' + c2.name + ' · ' + dayPart);
+      } catch(err) {}
+    } else {
+      fd.style.display = 'none';
     }
   }
 }
@@ -237,13 +299,35 @@ function initDetailPage() {
    ============================================================ */
 function initCancelPage() {
   const ev = new URLSearchParams(location.search).get('ev') || 'corrida';
-  if (ev === 'futebol') {
+  if (ev === 'corrida') {
+    try {
+      const d = JSON.parse(sessionStorage.getItem('sm_create_data') || 'null');
+      if (d) {
+        const nameEl = document.getElementById('ev-cancel-name');
+        const dateEl = document.getElementById('ev-cancel-date');
+        if (nameEl) nameEl.textContent = '"' + d.ativ + '"';
+        if (dateEl) dateEl.textContent = d.horario + '?';
+      }
+    } catch(err) {}
+  } else if (ev === 'futebol') {
     const nameEl = document.getElementById('ev-cancel-name');
     const dateEl = document.getElementById('ev-cancel-date');
     const simBtn = document.getElementById('btn-sim-cancelar');
     if (nameEl) nameEl.textContent = '"Futebol com o Bruno"';
     if (dateEl) dateEl.textContent = 'DOM, 26 às 19:00?';
     if (simBtn) simBtn.href = 'evento-cancelado.html?ev=futebol';
+  } else if (ev === 'feed') {
+    try {
+      const c = JSON.parse(sessionStorage.getItem('sm_feed_accepted') || 'null');
+      if (c) {
+        const nameEl = document.getElementById('ev-cancel-name');
+        const dateEl = document.getElementById('ev-cancel-date');
+        const simBtn = document.getElementById('btn-sim-cancelar');
+        if (nameEl) nameEl.textContent = '"' + c.name + '"';
+        if (dateEl) dateEl.textContent = c.time + '?';
+        if (simBtn) simBtn.href = 'evento-cancelado.html?ev=feed';
+      }
+    } catch(err) {}
   }
 }
 
@@ -261,7 +345,34 @@ function initCancelledPage() {
     setText('ev-title',     'Futebol com o Bruno');
     setText('ev-sub',       '19:00 · Adicionado por você');
     setText('ev-notif',     'Os 6 participantes foram notificados por push.');
+  } else if (ev === 'feed') {
+    let name = 'Evento do feed', time = '';
+    try {
+      const c = JSON.parse(sessionStorage.getItem('sm_feed_accepted') || 'null');
+      if (c) { name = c.name; time = c.time; }
+    } catch(err) {}
+    sessionStorage.removeItem('sm_feed_accepted');
+    const parts = time.split('·');
+    const dayAbbr = (parts[0] || '').trim().substring(0, 3).toUpperCase() || 'EVT';
+    const timeStr = (parts[1] || '').trim() || '—';
+    setText('ev-day-label', dayAbbr);
+    setText('ev-day-num',   timeStr.split(':')[0] || '—');
+    setText('ev-title',     name);
+    setText('ev-sub',       time + ' · Removido da agenda');
+    setText('ev-notif',     'Os participantes foram notificados por push.');
   } else {
+    // corrida — fill from sm_create_data if available
+    try {
+      const d = JSON.parse(sessionStorage.getItem('sm_create_data') || 'null');
+      if (d) {
+        setText('ev-title', d.ativ);
+        setText('ev-sub',   d.horario + ' · Criado por você');
+        const parts2 = (d.horario || '').split('·');
+        const dAbbr  = (parts2[0] || '').trim().substring(0, 3).toUpperCase();
+        if (dAbbr) setText('ev-day-label', dAbbr);
+        setText('ev-notif', 'Os participantes foram notificados por push.');
+      }
+    } catch(err) {}
     sessionStorage.removeItem('sm_corrida_criada');
   }
 }
@@ -406,6 +517,47 @@ function initCreateForm() {
 }
 
 /* ============================================================
+   Adicionado à agenda — preenche resumo dinamicamente (feed ou busca)
+   ============================================================ */
+function initAddedPage() {
+  const timeEl  = document.getElementById('ev-added-time');
+  if (!timeEl) return; // not on this page
+  try {
+    const raw = sessionStorage.getItem('sm_feed_accepted');
+    if (!raw) return; // came from busca flow — keep default (Futebol com o Bruno)
+    const c = JSON.parse(raw);
+    if (timeEl) timeEl.innerHTML = '<b>' + c.time + '</b> — ' + c.name;
+    const locEl  = document.getElementById('ev-added-local');
+    const infoEl = document.getElementById('ev-added-info');
+    if (locEl)  locEl.textContent  = c.place;
+    if (infoEl) infoEl.textContent = 'Organizado por ' + c.cn + ' · ' + c.age;
+  } catch(err) {}
+}
+
+/* ============================================================
+   Detalhes de evento do feed — preenche dinamicamente
+   ============================================================ */
+function initFeedDetails() {
+  if (!document.getElementById('feed-detail-page')) return;
+  try {
+    const c = JSON.parse(sessionStorage.getItem('sm_feed_accepted') || 'null');
+    if (!c) return;
+    setText('feed-detail-title',       c.name);
+    setText('feed-detail-title-inner', c.name);
+    setText('feed-detail-time',        c.time);
+    setText('feed-detail-time-body',   c.time + ' — duração ~1h');
+    setText('feed-detail-local',       c.place);
+    setText('feed-detail-map',         c.place);
+    setText('feed-detail-age',         c.age);
+    setText('feed-detail-by',          'Criado por ' + c.cn);
+    const banner = document.querySelector('#feed-detail-page .feed-detail-banner');
+    if (banner) banner.style.background = c.bg;
+    const icon = document.getElementById('feed-detail-icon');
+    if (icon) icon.textContent = c.sport;
+  } catch(err) {}
+}
+
+/* ============================================================
    Evento criado — preenche resumo dinamicamente
    ============================================================ */
 function initCreatedPage() {
@@ -446,8 +598,8 @@ function initEventDetails() {
    Reiniciar demonstração
    ============================================================ */
 function resetDemo() {
-  ['sm_futebol_adicionado','sm_corrida_criada','sm_create_data',
-   'sm_invite_count','sm_filters','sm_search','sm_feed_index'].forEach(k => sessionStorage.removeItem(k));
+  ['sm_futebol_adicionado','sm_corrida_criada','sm_create_data','sm_invite_count',
+   'sm_filters','sm_search','sm_feed_index','sm_feed_accepted','sm_new_count'].forEach(k => sessionStorage.removeItem(k));
   window.location.href = window.location.pathname.includes('/pages/') ? '../index.html' : 'index.html';
 }
 
@@ -501,6 +653,8 @@ document.addEventListener('DOMContentLoaded', () => {
   markCorridaCriada();
   initCreatedPage();
   initEventDetails();
+  initAddedPage();
+  initFeedDetails();
   initFeedCards();
   initCalendar();
   initFilters();
