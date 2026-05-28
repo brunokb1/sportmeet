@@ -200,11 +200,24 @@ function updateEventHighlight(day) {
 /* ============================================================
    Agenda — visibilidade dinâmica
    ============================================================ */
-function updateAgendaEvents() {
-  const futebolRow = document.getElementById('agenda-futebol');
-  const corridaRow = document.getElementById('agenda-corrida');
-  const feedRow    = document.getElementById('agenda-feed');
+// April 24 2026 = Friday (DOW 5). Returns the next calendar day number for a given day abbreviation.
+function nextDayNum(dayAbbr) {
+  const DOW = {'DOM':0,'SEG':1,'TER':2,'QUA':3,'QUI':4,'SEX':5,'SÁB':6,'SAB':6};
+  const tDow = DOW[dayAbbr];
+  if (tDow === undefined) return null;
+  const todayDow = 5, todayDay = 24, aprDays = 30; // Apr 24 = Friday
+  const diff = (tDow - todayDow + 7) % 7 || 7;     // 0 → next week
+  const nextDay = todayDay + diff;
+  return nextDay > aprDays ? nextDay - aprDays : nextDay; // roll into May if needed
+}
 
+function updateAgendaEvents() {
+  const basqueteRow = document.getElementById('agenda-basquete');
+  const futebolRow  = document.getElementById('agenda-futebol');
+  const corridaRow  = document.getElementById('agenda-corrida');
+  const feedRow     = document.getElementById('agenda-feed');
+
+  if (basqueteRow) basqueteRow.style.display = sessionStorage.getItem('sm_basquete_cancelado') === 'true' ? 'none' : '';
   if (futebolRow) futebolRow.style.display = sessionStorage.getItem('sm_futebol_adicionado') === 'true' ? '' : 'none';
 
   if (corridaRow) {
@@ -230,9 +243,9 @@ function updateAgendaEvents() {
         setText('agenda-feed-sub',  c.time + ' · ' + c.place);
         const parts = (c.time || '').split('·');
         const dayAbbr = (parts[0] || '').trim().substring(0, 3).toUpperCase();
-        const timeStr = (parts[1] || '').trim();
         if (dayAbbr) setText('agenda-feed-day', dayAbbr);
-        if (timeStr) setText('agenda-feed-num', timeStr);
+        const dn = nextDayNum(dayAbbr);
+        if (dn !== null) setText('agenda-feed-num', String(dn));
       } catch(err) {}
     } else {
       feedRow.style.display = 'none';
@@ -299,7 +312,14 @@ function initDetailPage() {
    ============================================================ */
 function initCancelPage() {
   const ev = new URLSearchParams(location.search).get('ev') || 'corrida';
-  if (ev === 'corrida') {
+  if (ev === 'basquete') {
+    const nameEl = document.getElementById('ev-cancel-name');
+    const dateEl = document.getElementById('ev-cancel-date');
+    const simBtn = document.getElementById('btn-sim-cancelar');
+    if (nameEl) nameEl.textContent = '"Basquete no Brooklin"';
+    if (dateEl) dateEl.textContent = 'QUI, 30 às 18:00?';
+    if (simBtn) simBtn.href = 'evento-cancelado.html?ev=basquete';
+  } else if (ev === 'corrida') {
     try {
       const d = JSON.parse(sessionStorage.getItem('sm_create_data') || 'null');
       if (d) {
@@ -338,7 +358,14 @@ function initCancelledPage() {
   const container = document.getElementById('cancelled-page');
   if (!container) return;
   const ev = new URLSearchParams(location.search).get('ev') || 'corrida';
-  if (ev === 'futebol') {
+  if (ev === 'basquete') {
+    sessionStorage.setItem('sm_basquete_cancelado', 'true');
+    setText('ev-day-label', 'QUI');
+    setText('ev-day-num',   '30');
+    setText('ev-title',     'Basquete no Brooklin');
+    setText('ev-sub',       '18:00 · Quadra Brooklin');
+    setText('ev-notif',     'Os 4 participantes foram notificados por push.');
+  } else if (ev === 'futebol') {
     sessionStorage.removeItem('sm_futebol_adicionado');
     setText('ev-day-label', 'DOM');
     setText('ev-day-num',   '26');
@@ -599,7 +626,8 @@ function initEventDetails() {
    ============================================================ */
 function resetDemo() {
   ['sm_futebol_adicionado','sm_corrida_criada','sm_create_data','sm_invite_count',
-   'sm_filters','sm_search','sm_feed_index','sm_feed_accepted','sm_new_count'].forEach(k => sessionStorage.removeItem(k));
+   'sm_filters','sm_search','sm_feed_index','sm_feed_accepted','sm_new_count',
+   'sm_basquete_cancelado'].forEach(k => sessionStorage.removeItem(k));
   window.location.href = window.location.pathname.includes('/pages/') ? '../index.html' : 'index.html';
 }
 
