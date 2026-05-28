@@ -1046,6 +1046,188 @@ textarea.form-input { resize: none; height: 90px; line-height: 1.5; }
 .notif-info svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
 
 /* ============================================================
+   Home — layout que preenche todo o espaço disponível
+   ============================================================ */
+.home-screen {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 8px;
+}
+.home-screen .swipe-stack {
+  flex: 1;
+  height: auto;
+  min-height: 210px;
+  max-height: 360px;
+  margin-bottom: 8px;
+}
+.home-screen .action-buttons {
+  padding: 6px 0 4px;
+}
+.home-screen .swipe-hint {
+  padding-bottom: 0;
+}
+
+/* Feed vazio */
+.feed-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 180px;
+  color: var(--text-4);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ============================================================
+   Perfil
+   ============================================================ */
+.profile-hero {
+  background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+  padding: 24px 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: -16px -16px 16px;
+}
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--green-dark);
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+.profile-info { flex: 1; }
+.profile-name { font-size: 18px; font-weight: 700; color: white; }
+.profile-user { font-size: 13px; color: rgba(255,255,255,.8); margin-top: 2px; }
+.profile-edit {
+  background: rgba(255,255,255,.2);
+  color: white;
+  border-radius: var(--r-full);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--surface);
+  border-radius: var(--r);
+  box-shadow: var(--sh-sm);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 8px;
+  border-right: 1px solid var(--border);
+}
+.stat-item:last-child { border-right: none; }
+.stat-num  { font-size: 22px; font-weight: 800; color: var(--text-1); }
+.stat-label { font-size: 11px; color: var(--text-3); margin-top: 2px; text-align: center; }
+
+.sports-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.sport-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-full);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.menu-list {
+  background: var(--surface);
+  border-radius: var(--r);
+  box-shadow: var(--sh-sm);
+  overflow: hidden;
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text-1);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+.menu-item:last-child { border-bottom: none; }
+.menu-item .menu-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.menu-item .menu-arrow { margin-left: auto; color: var(--text-4); }
+.menu-item.danger { color: var(--red); }
+
+/* ============================================================
+   Notificações
+   ============================================================ */
+.notif-item {
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--sh-sm);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.notif-info-wrap { flex: 1; min-width: 0; }
+.notif-name  { font-size: 14px; font-weight: 600; color: var(--text-1); }
+.notif-sport { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+.notif-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.notif-accept, .notif-reject {
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid;
+  font-family: var(--font-body);
+  transition: all .15s;
+}
+.notif-accept { background: var(--green); color: white; border-color: var(--green); }
+.notif-reject { background: transparent; color: var(--red); border-color: var(--red); }
+.notif-accept:hover { opacity: .85; }
+.notif-reject:hover { background: var(--red-light); }
+
+.notif-section-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 10px;
+  margin-top: 4px;
+}
+
+/* ============================================================
    Utilities
    ============================================================ */
 .mb-8  { margin-bottom: 8px; }
