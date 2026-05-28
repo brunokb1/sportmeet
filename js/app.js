@@ -11,7 +11,8 @@ const FEED_CARDS = [
   { name:'Vôlei na Praia',      sport:'🏐', bg:'linear-gradient(135deg,#EAB308,#B45309)', age:'Aberto',     time:'Sáb · 09:00',     place:'Praia de Pinheiros',           ci:'R', cn:'Rafael', cc:'av-yellow' },
 ];
 
-let feedIndex = 0;
+let feedIndex = parseInt(sessionStorage.getItem('sm_feed_index') || '0', 10);
+if (feedIndex >= 5) feedIndex = 0; // guard against stale value
 
 function buildCard(card, posClass, id) {
   return `
@@ -63,10 +64,16 @@ function initFeedCards() {
   if (!document.getElementById('swipe-stack')) return;
   renderFeedStack();
   document.getElementById('btn-accept')?.addEventListener('click', () => {
+    feedIndex++;
+    sessionStorage.setItem('sm_feed_index', feedIndex);
     dismissCard('right', () => { window.location.href = 'pages/adicionado-agenda.html'; });
   });
   document.getElementById('btn-reject')?.addEventListener('click', () => {
-    dismissCard('left', () => { feedIndex++; renderFeedStack(); });
+    dismissCard('left', () => {
+      feedIndex++;
+      sessionStorage.setItem('sm_feed_index', feedIndex);
+      renderFeedStack();
+    });
   });
 }
 
@@ -440,7 +447,7 @@ function initEventDetails() {
    ============================================================ */
 function resetDemo() {
   ['sm_futebol_adicionado','sm_corrida_criada','sm_create_data',
-   'sm_invite_count','sm_filters','sm_search'].forEach(k => sessionStorage.removeItem(k));
+   'sm_invite_count','sm_filters','sm_search','sm_feed_index'].forEach(k => sessionStorage.removeItem(k));
   window.location.href = window.location.pathname.includes('/pages/') ? '../index.html' : 'index.html';
 }
 
