@@ -173,10 +173,19 @@ function updateEventHighlight(day) {
 function updateAgendaEvents() {
   const futebolRow = document.getElementById('agenda-futebol');
   const corridaRow = document.getElementById('agenda-corrida');
-  const detailBox  = document.getElementById('corrida-detail');
   if (futebolRow) futebolRow.style.display = sessionStorage.getItem('sm_futebol_adicionado') === 'true' ? '' : 'none';
-  if (corridaRow) corridaRow.style.display = sessionStorage.getItem('sm_corrida_criada')     === 'true' ? '' : 'none';
-  if (detailBox)  detailBox.style.display  = sessionStorage.getItem('sm_corrida_criada')     === 'true' ? '' : 'none';
+  if (corridaRow) {
+    corridaRow.style.display = sessionStorage.getItem('sm_corrida_criada') === 'true' ? '' : 'none';
+    if (sessionStorage.getItem('sm_corrida_criada') === 'true') {
+      try {
+        const d = JSON.parse(sessionStorage.getItem('sm_create_data') || 'null');
+        if (d) {
+          setText('agenda-corrida-name', d.ativ);
+          setText('agenda-corrida-sub',  d.horario + ' · Criado por você');
+        }
+      } catch(err) {}
+    }
+  }
 }
 
 /* ============================================================
@@ -186,7 +195,18 @@ function updateHomeEvents() {
   const f = document.getElementById('week-futebol');
   const c = document.getElementById('week-corrida');
   if (f) f.style.display = sessionStorage.getItem('sm_futebol_adicionado') === 'true' ? '' : 'none';
-  if (c) c.style.display = sessionStorage.getItem('sm_corrida_criada')     === 'true' ? '' : 'none';
+  if (c) {
+    c.style.display = sessionStorage.getItem('sm_corrida_criada') === 'true' ? '' : 'none';
+    if (sessionStorage.getItem('sm_corrida_criada') === 'true') {
+      try {
+        const d = JSON.parse(sessionStorage.getItem('sm_create_data') || 'null');
+        if (d) {
+          const dayPart = (d.horario || '').split('·')[0].trim();
+          setText('week-corrida-text', d.ativ + ' · ' + (dayPart || 'Qua'));
+        }
+      } catch(err) {}
+    }
+  }
 }
 
 /* ============================================================
@@ -337,6 +357,9 @@ function initFriendSelection() {
   items.forEach((item, i) => {
     item.addEventListener('click', () => { selected.has(i) ? selected.delete(i) : selected.add(i); refresh(); });
   });
+  inviteBtn?.addEventListener('click', () => {
+    sessionStorage.setItem('sm_invite_count', String(selected.size));
+  });
   refresh();
 }
 
@@ -363,11 +386,62 @@ function initCreateForm() {
     const local   = document.getElementById('input-local')?.value.trim();
     const ativ    = document.getElementById('input-atividade')?.value.trim();
     const horario = document.getElementById('input-horario')?.value.trim();
+    const faixa   = document.getElementById('input-faixa')?.value.trim() || '';
+    const desc    = document.getElementById('input-desc')?.value.trim() || '';
+    const aberto  = !document.querySelector('.toggle-switch')?.classList.contains('off');
     if (!local || !ativ || !horario) {
       e.preventDefault();
       showToast('Preencha Local, Atividade e Horário antes de continuar.');
+      return;
     }
+    sessionStorage.setItem('sm_create_data', JSON.stringify({ local, ativ, horario, faixa, desc, aberto }));
   });
+}
+
+/* ============================================================
+   Evento criado — preenche resumo dinamicamente
+   ============================================================ */
+function initCreatedPage() {
+  if (!document.getElementById('mark-corrida-criada')) return;
+  try {
+    const d     = JSON.parse(sessionStorage.getItem('sm_create_data') || 'null');
+    const count = parseInt(sessionStorage.getItem('sm_invite_count') || '3', 10);
+    if (!d) return;
+    const timeEl = document.getElementById('ev-created-time');
+    const locEl  = document.getElementById('ev-created-local');
+    const frdEl  = document.getElementById('ev-created-friends');
+    if (timeEl) timeEl.innerHTML = '<b>' + d.horario + '</b> — ' + d.ativ;
+    if (locEl)  locEl.textContent = d.local;
+    if (frdEl)  frdEl.textContent = count + (count !== 1 ? ' amigos convidados' : ' amigo convidado');
+  } catch(err) {}
+}
+
+/* ============================================================
+   Detalhes do evento criado — preenche dinamicamente
+   ============================================================ */
+function initEventDetails() {
+  if (!document.getElementById('ev-detail-page')) return;
+  try {
+    const d = JSON.parse(sessionStorage.getItem('sm_create_data') || 'null');
+    if (!d) return;
+    setText('ev-detail-name', d.ativ);
+    setText('ev-detail-sub',  d.horario);
+    setText('ev-detail-horario', d.horario + ' — duração ~1h');
+    setText('ev-detail-local', d.local);
+    setText('ev-detail-map',   d.local);
+    if (d.desc)  setText('ev-detail-desc',  d.desc);
+    if (d.faixa) setText('ev-detail-faixa', d.faixa);
+    setText('ev-banner-tag', d.aberto ? 'Aberto' : 'Privado');
+  } catch(err) {}
+}
+
+/* ============================================================
+   Reiniciar demonstração
+   ============================================================ */
+function resetDemo() {
+  ['sm_futebol_adicionado','sm_corrida_criada','sm_create_data',
+   'sm_invite_count','sm_filters','sm_search'].forEach(k => sessionStorage.removeItem(k));
+  window.location.href = window.location.pathname.includes('/pages/') ? '../index.html' : 'index.html';
 }
 
 /* ============================================================
@@ -418,6 +492,8 @@ function markCorridaCriada() {
    ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
   markCorridaCriada();
+  initCreatedPage();
+  initEventDetails();
   initFeedCards();
   initCalendar();
   initFilters();

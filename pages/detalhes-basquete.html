@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SportMeet — Detalhes do Evento</title>
+  <title>SportMeet — Basquete no Brooklin</title>
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-<div class="app" id="ev-detail-page">
+<div class="app">
 
   <div class="status-bar">
     <span>9:41</span>
@@ -22,25 +22,25 @@
     <a href="agenda.html" class="back-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </a>
-    <span class="screen-title">Detalhes do evento</span>
+    <span class="screen-title">Basquete no Brooklin</span>
   </div>
 
   <!-- Mapa -->
   <div class="map-box">
     <div class="map-pin-wrap">📍</div>
-    <div class="map-label" id="ev-detail-map">Ibirapuera, portão 5</div>
+    <div class="map-label">Quadra Brooklin, portão principal</div>
   </div>
 
   <div class="screen-content">
 
     <!-- Banner do evento -->
     <div class="event-banner-card orange mb-16">
-      <div class="event-banner-icon">🏃</div>
+      <div class="event-banner-icon">🏀</div>
       <div class="event-banner-info">
-        <div class="event-banner-name" id="ev-detail-name">Corrida no Ibirapuera</div>
-        <div class="event-banner-sub" id="ev-detail-sub">Quarta · 10:00</div>
+        <div class="event-banner-name">Basquete no Brooklin</div>
+        <div class="event-banner-sub">Quinta, 30 de Abril · 18:00</div>
       </div>
-      <div class="event-banner-tag" id="ev-banner-tag">Criado por você</div>
+      <div class="event-banner-tag">Você está dentro</div>
     </div>
 
     <!-- Informações -->
@@ -49,38 +49,40 @@
         <div class="info-icon green">🕐</div>
         <div class="info-row-body">
           <div class="info-label">Horário</div>
-          <div class="info-value" id="ev-detail-horario">Qua · 10:00 — duração ~1h</div>
+          <div class="info-value">Qui · 18:00 — duração ~1h30</div>
         </div>
       </div>
       <div class="info-row">
         <div class="info-icon orange">📍</div>
         <div class="info-row-body">
           <div class="info-label">Local</div>
-          <div class="info-value" id="ev-detail-local">Parque Ibirapuera</div>
+          <div class="info-value">Quadra Brooklin</div>
         </div>
       </div>
       <div class="info-row">
         <div class="info-icon blue">👥</div>
         <div class="info-row-body">
           <div class="info-label">Faixa etária</div>
-          <div class="info-value" id="ev-detail-faixa">Livre</div>
+          <div class="info-value">18-35 anos</div>
         </div>
       </div>
       <div class="info-row">
         <div class="info-icon green">📝</div>
         <div class="info-row-body">
           <div class="info-label">Descrição</div>
-          <div class="info-value" id="ev-detail-desc">Treino aberto, ritmo 6:00min/km. Todos os níveis bem-vindos. Encontro na entrada do portão 5.</div>
+          <div class="info-value">Jogo amistoso 3×3. Todos os níveis são bem-vindos. Leve água e tênis apropriado.</div>
         </div>
       </div>
       <div class="info-row">
         <div class="info-icon blue">👥</div>
         <div class="info-row-body">
-          <div class="info-label">Participantes confirmados · 2</div>
+          <div class="info-label">Participantes · 4 de 12</div>
           <div class="info-value" style="margin-top:6px">
             <div class="avatar-row">
-              <div class="avatar av-sm av-purple">B</div>
-              <div class="avatar av-sm av-pink">A</div>
+              <div class="avatar av-sm av-orange">LF</div>
+              <div class="avatar av-sm av-blue">J</div>
+              <div class="avatar av-sm av-purple">R</div>
+              <div class="avatar av-sm av-green">G</div>
             </div>
           </div>
         </div>
@@ -90,7 +92,7 @@
     <!-- Botões de ação -->
     <div class="btn-row">
       <a href="agenda.html" class="btn btn-outline">VOLTAR</a>
-      <a href="confirmar-cancelamento.html" class="btn btn-red">CANCELAR EVENTO</a>
+      <button class="btn btn-red" onclick="showToast('Cancelamento em breve!')">CANCELAR PARTICIPAÇÃO</button>
     </div>
 
   </div>
