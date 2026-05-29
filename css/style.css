@@ -1,7 +1,3 @@
-/* ============================================================
-   SportMeet — Folha de estilos principal
-   ============================================================ */
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800&display=swap');
 
 :root {
@@ -64,7 +60,7 @@ body {
 /* ── Phone shell ── */
 .app {
   width: 390px;
-  min-height: 844px;
+  height: 844px;
   background: var(--bg);
   border-radius: 44px;
   box-shadow: 0 24px 64px rgba(0,0,0,.25);
@@ -75,7 +71,7 @@ body {
 }
 
 @media (max-width: 430px) {
-  body { background: var(--bg); padding: 0; }
+  body { background: var(--bg); padding: 0; display: block; }
   .app { width: 100%; border-radius: 0; box-shadow: none; min-height: 100vh; }
 }
 
@@ -353,7 +349,7 @@ body {
 /* ── Swipe card ── */
 .swipe-stack {
   position: relative;
-  height: 260px;
+  height: 290px;
   margin-bottom: 6px;
 }
 .swipe-card {
@@ -1078,10 +1074,8 @@ textarea.form-input { resize: none; height: 90px; line-height: 1.5; }
   padding-bottom: 8px;
 }
 .home-screen .swipe-stack {
-  flex: 1;
-  height: auto;
-  min-height: 210px;
-  max-height: 360px;
+  flex: none;
+  height: 260px;
   margin-bottom: 8px;
 }
 .home-screen .action-buttons {
@@ -1118,14 +1112,14 @@ textarea.form-input { resize: none; height: 90px; line-height: 1.5; }
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: white;
+  background: var(--orange); /* default; overridden by av-* class */
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-head);
   font-size: 26px;
   font-weight: 800;
-  color: var(--green-dark);
+  color: white;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(0,0,0,.15);
 }
@@ -1210,6 +1204,54 @@ textarea.form-input { resize: none; height: 90px; line-height: 1.5; }
 .menu-item.danger { color: var(--red); }
 
 /* ============================================================
+   Sport chip selector (criar-evento)
+   ============================================================ */
+#sport-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.sport-chip-sel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--r-full);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  user-select: none;
+  color: var(--text-2);
+}
+.sport-chip-sel.active {
+  font-weight: 700;
+  color: var(--text-1);
+}
+.sport-chip-sel:hover:not(.active) {
+  border-color: var(--border2);
+  background: var(--bg);
+}
+
+/* ============================================================
+   Profile bio / location
+   ============================================================ */
+.profile-bio {
+  font-size: 12px;
+  color: rgba(255,255,255,.85);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.profile-location {
+  font-size: 11px;
+  color: rgba(255,255,255,.72);
+  margin-top: 3px;
+}
+
+/* ============================================================
    Notificações
    ============================================================ */
 .notif-item {
@@ -1254,8 +1296,10 @@ textarea.form-input { resize: none; height: 90px; line-height: 1.5; }
 /* ============================================================
    Utilities
    ============================================================ */
+.mb-4  { margin-bottom: 4px; }
 .mb-8  { margin-bottom: 8px; }
 .mb-12 { margin-bottom: 12px; }
+.mb-14 { margin-bottom: 14px; }
 .mb-16 { margin-bottom: 16px; }
 .mt-8  { margin-top: 8px; }
 .mt-12 { margin-top: 12px; }
@@ -1268,3 +1312,755 @@ textarea.form-input { resize: none; height: 90px; line-height: 1.5; }
 .bold        { font-weight: 700; }
 .small       { font-size: 12px; }
 .divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+/* ============================================================
+   Responsividade — iOS safe areas + adaptação de tela
+   ============================================================ */
+@supports (padding: env(safe-area-inset-top)) {
+  .status-bar {
+    padding-top: env(safe-area-inset-top);
+    height: calc(44px + env(safe-area-inset-top));
+  }
+  .bottom-nav {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Tela real do dispositivo (sem moldura de phone) */
+@media (max-width: 430px) {
+  html, body {
+    height: 100%;
+    overflow: hidden;           /* body não rola — só o screen-content rola */
+    background: var(--bg);
+    padding: 0;
+    display: block;             /* sobrescreve display:flex do desktop */
+  }
+  .app {
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    height: 100svh;
+    min-height: 0;              /* sobrescreve min-height do desktop */
+    overflow: hidden;
+  }
+  .screen-content {
+    min-height: 0;              /* permite flex shrink correto */
+    -webkit-overflow-scrolling: touch;
+  }
+  .status-bar { display: none; }
+}
+
+/* Ajuste fino para telas muito pequenas */
+@media (max-width: 360px) {
+  .home-grid { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: repeat(3, 1fr); }
+  .stat-num  { font-size: 18px; }
+  .card-title { font-size: 15px; }
+  .card-meta-row { font-size: 11px; }
+}
+
+/* Touch — alvos mínimos de 44px */
+.nav-item  { min-height: 44px; }
+.pill      { min-height: 44px; display: inline-flex; align-items: center; }
+.btn       { min-height: 48px; }
+.menu-item { min-height: 52px; }
+.friend-item { min-height: 56px; }
+
+/* Scroll suave no conteúdo */
+.screen-content {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  scroll-behavior: smooth;
+}
+
+/* ============================================================
+   Location autocomplete dropdown
+   ============================================================ */
+.loc-dropdown {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r-sm);
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  z-index: 200;
+  max-height: 220px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.loc-dropdown::-webkit-scrollbar { display: none; }
+
+.loc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+}
+.loc-item:last-child { border-bottom: none; }
+.loc-item:hover, .loc-item.selected { background: var(--bg); }
+.loc-item-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.loc-name { font-size: 13px; font-weight: 600; color: var(--text-1); margin-bottom: 2px; }
+.loc-sub  { font-size: 11px; color: var(--text-3); }
+
+/* ============================================================
+   Date/Time picker — bottom sheet
+   ============================================================ */
+.dt-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.dt-picker-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.dt-picker-sheet {
+  position: relative;
+  background: var(--surface);
+  width: 100%;
+  max-width: 430px;
+  border-radius: 20px 20px 0 0;
+  padding: 16px 16px calc(24px + env(safe-area-inset-bottom,0px));
+  max-height: 92vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.32,.72,0,1);
+}
+.dt-picker-sheet.open { transform: translateY(0); }
+
+.dt-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.dt-picker-title  { font-size: 16px; font-weight: 700; }
+.dt-picker-close  {
+  background: var(--bg);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  color: var(--text-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+}
+.dt-picker-close:hover { background: var(--border); }
+
+.dt-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.dt-cal-month { font-weight: 700; font-size: 15px; }
+.dt-cal-arrow {
+  background: var(--bg);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .1s;
+  line-height: 1;
+}
+.dt-cal-arrow:hover { background: var(--border); }
+
+.dt-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 14px;
+}
+.dt-cal-head {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-4);
+  padding: 4px 0 6px;
+}
+.dt-cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background .1s;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.dt-cal-cell.empty       { visibility: hidden; pointer-events: none; }
+.dt-cal-cell:hover:not(.empty) { background: var(--green-light); }
+.dt-cal-cell.today       { font-weight: 800; border: 2px solid var(--green); color: var(--green-dark); }
+.dt-cal-cell.selected    { background: var(--green); color: white; font-weight: 700; }
+.dt-cal-cell.selected.today { border-color: transparent; }
+
+.dt-time-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.dt-time-label  { font-size: 14px; font-weight: 600; }
+.dt-time-inputs { display: flex; align-items: center; gap: 6px; }
+.dt-time-sep    { font-size: 20px; font-weight: 700; color: var(--text-2); }
+.dt-time-sel {
+  padding: 8px 4px;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r-sm);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-1);
+  background: var(--bg);
+  cursor: pointer;
+  width: 64px;
+  text-align: center;
+  font-family: var(--font-body);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Date trigger button */
+.dt-trigger {
+  text-align: left;
+  cursor: pointer;
+  background: var(--surface);
+  font-size: 14px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dt-trigger:hover { border-color: var(--green); }
+
+/* ============================================================
+   Profile tabs
+   ============================================================ */
+.profile-tabs {
+  display: flex;
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 4px;
+  gap: 2px;
+  box-shadow: var(--sh-sm);
+}
+.profile-tab {
+  flex: 1;
+  padding: 10px 6px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all .18s;
+  font-family: var(--font-body);
+  white-space: nowrap;
+}
+.profile-tab.active {
+  background: var(--green);
+  color: white;
+  box-shadow: 0 2px 8px rgba(34,197,94,.3);
+}
+.tab-panel { display: block; }
+
+/* ============================================================
+   Live search results container
+   ============================================================ */
+#live-results {
+  display: none;
+  margin-top: 4px;
+  margin-bottom: 16px;
+}
+
+/* ============================================================
+   Friend profile — avatar hero (same as user profile)
+   ============================================================ */
+.friend-hero-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+
+/* ============================================================
+   Swipe card — prevent text selection while dragging
+   ============================================================ */
+.swipe-card { -webkit-user-select: none; user-select: none; }
+
+/* ============================================================
+   Form input wrapper for autocomplete
+   ============================================================ */
+.input-wrap { position: relative; }
+
+/* ============================================================
+   Feed card — compact + description snippet
+   ============================================================ */
+.card-image { height: 130px; }
+.card-body {
+  padding: 10px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 3px;
+  height: auto;
+  min-height: 0;
+  flex: 1;
+}
+.card-desc {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.4;
+  margin-top: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-details-link {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--orange);
+  margin-top: 2px;
+  text-decoration: none;
+  display: inline-block;
+}
+
+/* Swipe overlay labels */
+.swipe-overlay {
+  position: absolute;
+  top: 20px;
+  padding: 6px 14px;
+  border-radius: var(--r-full);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  border: 3px solid;
+  opacity: 0;
+  pointer-events: none;
+  transform: rotate(-8deg);
+  transition: opacity .1s;
+  z-index: 10;
+}
+.swipe-overlay.left  { left: 14px;  color: var(--red);   border-color: var(--red);   transform: rotate(8deg); }
+.swipe-overlay.right { right: 14px; color: var(--green); border-color: var(--green); transform: rotate(-8deg); }
+
+/* ============================================================
+   Age range sliders
+   ============================================================ */
+.age-range-ctrl { padding: 4px 0; }
+.age-livre-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-2);
+  cursor: pointer;
+  margin-bottom: 10px;
+  user-select: none;
+}
+.age-livre-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--green);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.age-sliders { margin-top: 6px; }
+.age-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.age-slider-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+  width: 24px;
+  flex-shrink: 0;
+}
+.age-range-input {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border2);
+  outline: none;
+  cursor: pointer;
+}
+.age-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--green);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(34,197,94,.35);
+}
+.age-range-input::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--green);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(34,197,94,.35);
+}
+.age-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-1);
+  min-width: 58px;
+  text-align: right;
+}
+
+/* ============================================================
+   Activity autocomplete — tag chips (multi-select mode)
+   ============================================================ */
+.activity-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  min-height: 0;
+}
+.activity-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  border: 1.5px solid var(--green);
+  border-radius: var(--r-full);
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.tag-remove {
+  background: none;
+  border: none;
+  color: var(--green-dark);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 0 0 2px;
+  line-height: 1;
+  opacity: .7;
+  transition: opacity .1s;
+}
+.tag-remove:hover { opacity: 1; }
+
+/* ============================================================
+   Buscar — smart filter form
+   ============================================================ */
+.search-filter-section {
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 14px;
+  box-shadow: var(--sh-sm);
+  margin-bottom: 12px;
+}
+.search-filter-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+  display: block;
+}
+.search-filter-btn {
+  width: 100%;
+  text-align: left;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text-4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  transition: border-color .15s;
+}
+.search-filter-btn:hover { border-color: var(--green); }
+.search-filter-btn.has-value { color: var(--text-1); border-color: var(--green); }
+.search-filter-btn .sbtn-icon { color: var(--text-4); flex-shrink: 0; }
+.search-filter-clear {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-4);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 0 2px;
+  display: none;
+  align-items: center;
+}
+.search-filter-btn.has-value .search-filter-clear { display: flex; }
+
+/* Period pills in buscar */
+.period-pills { display: flex; gap: 8px; }
+.period-pill {
+  flex: 1;
+  padding: 9px 6px;
+  border-radius: var(--r-sm);
+  border: 1.5px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  background: var(--surface);
+  text-align: center;
+  transition: all .15s;
+  user-select: none;
+}
+.period-pill.active {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
+}
+
+/* ============================================================
+   Profile — stat items as links
+   ============================================================ */
+.stat-item-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 8px;
+  border-right: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background .15s;
+}
+.stat-item-link:last-child { border-right: none; }
+.stat-item-link:hover { background: var(--bg); }
+
+/* ============================================================
+   Lista — generic list page
+   ============================================================ */
+.lista-header {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 12px;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   Buscar — active filter chips summary
+   ============================================================ */
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.active-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--green);
+  color: white;
+  border-radius: var(--r-full);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.active-filter-chip button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0 0 0 2px;
+  line-height: 1;
+  opacity: .85;
+}
+.active-filter-chip button:hover { opacity: 1; }
+
+/* ============================================================
+   v4 — Full-bleed Tinder card redesign
+   ============================================================ */
+
+/* Swipe stack fills home screen flex space */
+.home-screen .swipe-stack {
+  flex: 1;
+  min-height: 240px;
+  max-height: 460px;
+  margin-bottom: 4px;
+}
+
+/* Card becomes a transparent shell — bg fills it */
+.swipe-card { background: transparent; }
+
+.card-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Large centered sport emoji */
+.card-emoji-xl {
+  font-size: 72px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 20px rgba(0,0,0,.25));
+  pointer-events: none;
+  user-select: none;
+  margin-bottom: 64px; /* make room for overlay */
+}
+
+/* Badge positioned top-left */
+.card-top-badges {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+}
+
+/* Override badge for dark bg */
+.card-bg .card-age-badge {
+  background: rgba(0,0,0,.38);
+  color: rgba(255,255,255,.92);
+  border: none;
+}
+.card-bg .card-age-badge svg { stroke: rgba(255,255,255,.8); }
+
+/* Bottom gradient overlay */
+.card-info-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.6) 50%, transparent 100%);
+  padding: 52px 14px 14px;
+}
+
+/* White text elements inside overlay */
+.card-title-w {
+  font-family: var(--font-head);
+  font-size: 19px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 5px;
+}
+.card-meta-w {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: rgba(255,255,255,.85);
+  margin-bottom: 3px;
+}
+.card-meta-w svg { width: 12px; height: 12px; flex-shrink: 0; opacity: .75; }
+.card-desc-w {
+  font-size: 11px;
+  color: rgba(255,255,255,.72);
+  line-height: 1.4;
+  margin: 5px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-creator-w {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,.2);
+  font-size: 12px;
+  color: rgba(255,255,255,.82);
+  cursor: pointer;
+}
+.card-creator-w:hover { color: #fff; }
+.card-details-link-w {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  background: rgba(255,255,255,.2);
+  padding: 4px 10px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.card-details-link-w:hover { background: rgba(255,255,255,.32); }
+
+/* Extra-small avatar */
+.av-xs { width: 22px; height: 22px; font-size: 9px; }
+
+/* Header alignment — more top breathing room */
+.app-header        { padding-top: 20px; }
+.screen-header     { padding-top: 18px; }
+.screen-header-plain { padding-top: 18px; }
+
+/* Clickable creator row (detalhes, results) */
+.creator-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  transition: background .15s;
+}
+.creator-link:hover { background: var(--bg); color: var(--orange); }
+
+/* Friend / following confirmed state */
+.btn-friend-confirmed {
+  background: var(--green-light) !important;
+  color: var(--green-dark) !important;
+  border: 1.5px solid var(--green) !important;
+  cursor: default !important;
+  pointer-events: none;
+  font-size: 13px !important;
+}

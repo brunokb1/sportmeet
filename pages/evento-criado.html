@@ -2,24 +2,12 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>SportMeet — Evento Criado</title>
-  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/style.css?v=4">
 </head>
 <body>
 <div class="app">
-
-  <div class="status-bar">
-    <span>9:41</span>
-    <div class="status-icons">
-      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 8h2v3H1zM5 6h2v5H5zM9 4h2v7H9zM13 2h2v9h-2z"/></svg>
-      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5c1.5-1.5 3.5-2.5 6-2.5s4.5 1 6 2.5M4 7.5c1-1 2.5-1.5 4-1.5s3 .5 4 1.5M6.5 10c.4-.4 1-.6 1.5-.6s1.1.2 1.5.6"/></svg>
-      <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.5" stroke="currentColor" stroke-opacity=".4" stroke-width="1"/><rect x="3" y="3" width="16" height="6" rx="1" fill="currentColor"/><rect x="22" y="4" width="1.5" height="4" rx=".5" fill="currentColor" opacity=".4"/></svg>
-    </div>
-  </div>
-
-  <!-- Marcador lido por JS para setar sm_corrida_criada -->
-  <div id="mark-corrida-criada" style="display:none"></div>
 
   <div class="success-wrap">
 
@@ -32,28 +20,27 @@
     <div class="success-h">Evento criado<br>com sucesso!</div>
     <p class="success-p">Seus amigos receberão o convite em alguns segundos.</p>
 
-    <!-- Resumo do evento -->
     <div class="success-card">
       <div style="display:flex;flex-direction:column;gap:8px">
         <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span id="ev-created-time"><b>Qua · 10:00</b> — Corrida</span>
+          <span id="ev-created-time"><b>—</b></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-3)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0116 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          <span id="ev-created-local">Parque Ibirapuera</span>
+          <span id="ev-created-local">—</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-3)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-          <span id="ev-created-friends">3 amigos convidados</span>
+          <span id="ev-created-friends">—</span>
         </div>
       </div>
     </div>
 
     <div class="success-buttons">
       <div class="btn-row">
-        <button class="btn btn-outline btn-sm" onclick="showToast('Link copiado!')">COMPARTILHAR LINK</button>
-        <a href="detalhes-evento.html" class="btn btn-outline btn-sm">DETALHES</a>
+        <button class="btn btn-outline btn-sm" id="btn-share">COMPARTILHAR LINK</button>
+        <a href="#" class="btn btn-outline btn-sm" id="btn-see-details">VER DETALHES</a>
       </div>
       <a href="../index.html" class="btn btn-green">VOLTAR PARA O INÍCIO</a>
     </div>
@@ -81,6 +68,7 @@
   </nav>
 
 </div>
-<script src="../js/app.js"></script>
+<script src="../js/store.js?v=5"></script>
+<script src="../js/app.js?v=5"></script>
 </body>
 </html>

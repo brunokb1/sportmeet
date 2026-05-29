@@ -3,52 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>SportMeet — Notificações</title>
+  <title>SportMeet — Perfil do amigo</title>
   <link rel="stylesheet" href="../css/style.css?v=4">
 </head>
 <body>
 <div class="app">
 
   <div class="screen-header">
-    <a href="../index.html" class="back-btn">
+    <button class="back-btn" onclick="window.history.back()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    </a>
-    <span class="screen-title">Notificações</span>
+    </button>
+    <span class="screen-title" id="friend-page-title">Perfil</span>
   </div>
 
   <div class="screen-content">
 
-    <div class="notif-section-label">Convites para eventos</div>
-    <div id="invites-list"></div>
-
-    <div class="notif-section-label" style="margin-top:20px">Pedidos de amizade</div>
-    <div id="friends-list"></div>
-
-    <!-- Notificações gerais (estáticas) -->
-    <div class="notif-section-label" style="margin-top:20px">Recentes</div>
-    <div class="info-section">
-      <div class="info-row">
-        <div class="info-icon green">📅</div>
-        <div class="info-row-body">
-          <div class="info-label">Lembrete</div>
-          <div class="info-value">Basquete no Brooklin começa em 1h · Qui 18:00</div>
-        </div>
+    <!-- Hero do amigo -->
+    <div class="profile-hero">
+      <div class="profile-avatar" id="friend-avatar">
+        <span id="friend-initials">?</span>
       </div>
-      <div class="info-row">
-        <div class="info-icon blue">✓</div>
-        <div class="info-row-body">
-          <div class="info-label">Pedro confirmou presença</div>
-          <div class="info-value">Basquete no Brooklin · Qui 18:00</div>
-        </div>
+      <div class="profile-info">
+        <div class="profile-name"     id="friend-name">—</div>
+        <div class="profile-user"     id="friend-username">—</div>
+        <div class="profile-bio"      id="friend-bio"></div>
+        <div class="profile-location" id="friend-location"></div>
       </div>
-      <div class="info-row">
-        <div class="info-icon orange">⭐</div>
-        <div class="info-row-body">
-          <div class="info-label">Evento popular perto de você</div>
-          <div class="info-value">Futebol Society · Dom · Brooklin</div>
-        </div>
+      <button class="profile-edit" id="friend-follow-btn">+ Seguir</button>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-num" id="friend-stat-participated">—</div>
+        <div class="stat-label">Eventos<br>participados</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="friend-stat-created">—</div>
+        <div class="stat-label">Eventos<br>criados</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="friend-stat-friends">—</div>
+        <div class="stat-label">Amigos</div>
       </div>
     </div>
+
+    <!-- Atividades -->
+    <div class="section-label mb-8">Atividades</div>
+    <div class="sports-row mb-16" id="friend-sports"></div>
+
+    <!-- Eventos criados pelo amigo -->
+    <div class="section-label mb-8">Eventos criados</div>
+    <div id="friend-events-list"></div>
 
   </div>
 
