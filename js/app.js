@@ -779,7 +779,7 @@ function initInvite() {
   const friends   = Store.getFriends();
   const container = document.getElementById('friend-list');
   if (!container) return;
-  const selected  = new Set([0,1,2]);
+  const selected  = new Set();
   const countEl   = document.getElementById('selected-count');
   const inviteBtn = document.getElementById('invite-btn');
 
@@ -819,7 +819,11 @@ function initInvite() {
     });
     const n = selected.size;
     if (countEl)   countEl.textContent   = n + ' SELECIONADO' + (n !== 1 ? 'S' : '');
-    if (inviteBtn) inviteBtn.textContent = 'CONVIDAR · ' + n + ' AMIGO' + (n !== 1 ? 'S' : '');
+    if (inviteBtn) {
+      inviteBtn.textContent = 'CONVIDAR · ' + n + ' AMIGO' + (n !== 1 ? 'S' : '');
+      inviteBtn.disabled    = n === 0;
+      inviteBtn.style.opacity = n === 0 ? '0.5' : '1';
+    }
   }
 
   container.querySelectorAll('.friend-item').forEach(item => {
@@ -989,8 +993,7 @@ function initCancelConfirm() {
    ============================================================ */
 function initCancelled() {
   const id = new URLSearchParams(location.search).get('id') || Store.getPending('cancelId');
-  const ev = id ? Store.getEventById(id) : null;
-  if (ev) Store.cancelEvent(id);
+  const ev = id ? Store.cancelEvent(id) : null;  // returns snapshot
   Store.clearPending('cancelId');
 
   if (ev) {
