@@ -651,11 +651,25 @@ function initDetails() {
     if (btnCancel) btnCancel.style.display = 'none';
     if (btnAdd) {
       btnAdd.style.display = '';
-      btnAdd.addEventListener('click', () => {
-        Store.setPending('eventId', ev.id);
-        Store.joinEvent({ ...ev, source:'search' });
-        window.location.href = 'adicionado-agenda.html';
-      });
+      const isPast = new Date(ev.datetime) < new Date();
+      const isFull = ev.participants.length >= ev.maxParticipants;
+      if (isPast) {
+        btnAdd.textContent  = 'EVENTO ENCERRADO';
+        btnAdd.disabled     = true;
+        btnAdd.style.opacity = '0.5';
+        btnAdd.style.cursor  = 'not-allowed';
+      } else if (isFull) {
+        btnAdd.textContent  = 'VAGAS ESGOTADAS';
+        btnAdd.disabled     = true;
+        btnAdd.style.opacity = '0.5';
+        btnAdd.style.cursor  = 'not-allowed';
+      } else {
+        btnAdd.addEventListener('click', () => {
+          Store.setPending('eventId', ev.id);
+          Store.joinEvent({ ...ev, source:'search' });
+          window.location.href = 'adicionado-agenda.html';
+        });
+      }
     }
   }
 }
@@ -729,6 +743,17 @@ function initCreateForm() {
     _buildAgeRangeUI(ageContainer, ageHidden);
   }
 
+  /* ── description character counter ── */
+  const descInput   = document.getElementById('input-desc');
+  const descCounter = document.getElementById('desc-counter');
+  if (descInput && descCounter) {
+    descInput.addEventListener('input', () => {
+      const len = descInput.value.length;
+      descCounter.textContent = len + '/500';
+      descCounter.style.color = len > 480 ? 'var(--red)' : 'var(--text-4)';
+    });
+  }
+
   /* ── toggle ── */
   $$('.toggle-switch').forEach(sw => {
     sw.addEventListener('click', () => {
@@ -755,6 +780,9 @@ function initCreateForm() {
     if (!local) { e.preventDefault(); showToast('Informe o local do evento.'); return; }
     if (!ativ)  { e.preventDefault(); showToast('Informe o título do evento.'); return; }
     if (!dtVal) { e.preventDefault(); showToast('Selecione a data e hora.'); return; }
+    if (dtVal && new Date(dtVal) <= new Date()) { e.preventDefault(); showToast('A data precisa ser no futuro ⏰'); return; }
+    if (maxPart && (isNaN(parseInt(maxPart)) || parseInt(maxPart) < 2 || parseInt(maxPart) > 100)) { e.preventDefault(); showToast('Máx. participantes: entre 2 e 100'); return; }
+    if (desc && desc.length > 500) { e.preventDefault(); showToast('Descrição muito longa (máx. 500 caracteres)'); return; }
 
     // Resolve sport from activity autocomplete
     const slug     = tipoInput2?.dataset.slug  || (tipoVal || 'outro').toLowerCase().replace(/\s+/g,'');
