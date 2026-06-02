@@ -31,6 +31,12 @@ function showToast(msg, dur) {
   t._t = setTimeout(() => { t.style.opacity = '0'; }, dur || 2800);
 }
 
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])
+  );
+}
+
 function goBack() {
   if (history.length > 1) { history.back(); return; }
   const inPg = location.pathname.includes('/pages/');
@@ -41,7 +47,7 @@ function buildAvatarRow(participants, limit) {
   const sl = participants.slice(0, limit || 5);
   const rest = participants.length - sl.length;
   return sl.map(p => {
-    const av = `<div class="avatar av-sm ${p.c}" title="${p.name||p.i}">${p.i}</div>`;
+    const av = `<div class="avatar av-sm ${p.c}" title="${esc(p.name||p.i)}">${esc(p.i)}</div>`;
     if (!p.name) return av;
     const href = _personHref(p.name);
     return `<a href="${href}" style="display:inline-flex;line-height:0;border-radius:50%;transition:transform .15s" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''">${av}</a>`;
@@ -55,7 +61,7 @@ function buildEventBanner(ev) {
       <div style="background:${ev.gradient};padding:16px;display:flex;align-items:center;gap:12px">
         <div style="font-size:30px;line-height:1;background:rgba(255,255,255,.15);border-radius:10px;width:48px;height:48px;display:flex;align-items:center;justify-content:center">${ev.sport}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:16px;color:white;line-height:1.2">${ev.title}</div>
+          <div style="font-weight:700;font-size:16px;color:white;line-height:1.2">${esc(ev.title)}</div>
           <div style="font-size:12px;color:rgba(255,255,255,.85);margin-top:3px">${Store.fmt.full(ev.datetime)} · ${ev.duration}</div>
         </div>
       </div>
@@ -137,8 +143,8 @@ function _renderHomeInvites() {
       <div class="mini-invite">
         <div class="avatar av-sm ${n.fromColor}">${n.fromInitial}</div>
         <div>
-          <div class="mini-invite-name">${n.from}</div>
-          <div class="mini-invite-sport">${n.label}</div>
+          <div class="mini-invite-name">${esc(n.from)}</div>
+          <div class="mini-invite-sport">${esc(n.label)}</div>
         </div>
       </div>
     </a>`;
@@ -156,7 +162,7 @@ function _renderHomeWeek() {
   container.innerHTML = myEvs.slice(0,4).map(ev =>
     `<div class="mini-event">
       <span class="dot" style="background:${_gradientColor(ev.gradient)}"></span>
-      <span>${ev.sport} ${ev.title} · ${Store.fmt.dow(ev.datetime)}</span>
+      <span>${esc(ev.sport)} ${esc(ev.title)} · ${Store.fmt.dow(ev.datetime)}</span>
     </div>`
   ).join('');
 }
@@ -191,7 +197,8 @@ function _renderFeed() {
     const i      = cards.length - 1 - ri;
     const cls    = i === 0 ? '' : i === 1 ? 'behind1' : 'behind2';
     const frontId = i === 0 ? 'id="front-card"' : '';
-    const desc   = card.description ? card.description.slice(0, 80) + (card.description.length > 80 ? '…' : '') : '';
+    const descRaw = card.description ? card.description.slice(0, 80) + (card.description.length > 80 ? '…' : '') : '';
+    const desc   = esc(descRaw);
     const profileHref = _personHref(card.createdBy);
     return `
       <div class="swipe-card ${cls}" ${frontId} style="user-select:none">
@@ -203,24 +210,24 @@ function _renderFeed() {
           <div class="card-top-badges">
             <div class="card-age-badge">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-              ${card.ageRange}
+              ${esc(card.ageRange)}
             </div>
           </div>
           <div class="card-emoji-xl">${card.sport}</div>
           <div class="card-info-overlay">
-            <div class="card-title-w">${card.title}</div>
+            <div class="card-title-w">${esc(card.title)}</div>
             <div class="card-meta-w">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              ${Store.fmt.full(card.datetime)} · ${card.duration}
+              ${Store.fmt.full(card.datetime)} · ${esc(card.duration)}
             </div>
             <div class="card-meta-w">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0116 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              ${card.local}
+              ${esc(card.local)}
             </div>
             ${desc ? `<div class="card-desc-w">${desc}</div>` : ''}
             <div class="card-creator-w" onclick="event.stopPropagation();location.href='${profileHref}'">
-              <div class="avatar av-xs ${card.creatorColor}">${card.creatorInitial}</div>
-              <span>${card.createdBy}</span>
+              <div class="avatar av-xs ${card.creatorColor}">${esc(card.creatorInitial)}</div>
+              <span>${esc(card.createdBy)}</span>
               <a href="${_detailsHref(card.id)}" class="card-details-link-w" onclick="event.stopPropagation()">Ver detalhes</a>
             </div>
           </div>
@@ -490,19 +497,19 @@ function _doLiveSearch() {
       const profHref  = _personHref(ev.createdBy);
       return `
         <div class="result-card" onclick="location.href='detalhes.html?id=${ev.id}'">
-          <div class="result-thumb" style="background:${ev.gradient};font-size:22px;color:transparent;text-shadow:0 0 0 white">${ev.sport}</div>
+          <div class="result-thumb" style="background:${ev.gradient};font-size:22px">${ev.sport}</div>
           <div class="result-info">
-            <div class="result-name">${ev.title}</div>
-            <div class="result-addr">${ev.local} · ${ev.region}</div>
+            <div class="result-name">${esc(ev.title)}</div>
+            <div class="result-addr">${esc(ev.local)} · ${esc(ev.region)}</div>
             <div class="result-tags">
               <span class="tag">${Store.fmt.short(ev.datetime)}</span>
-              <span class="tag">${ev.ageRange}</span>
+              <span class="tag">${esc(ev.ageRange)}</span>
               ${alreadyIn ? '<span class="tag" style="background:var(--green-light);color:var(--green-dark)">Na agenda ✓</span>' : ''}
             </div>
             <div class="result-creator" style="margin-top:4px">
               <a href="${profHref}" class="creator-link" onclick="event.stopPropagation()">
-                <div class="avatar av-sm ${ev.creatorColor}" style="width:18px;height:18px;font-size:8px">${ev.creatorInitial}</div>
-                ${ev.createdBy}
+                <div class="avatar av-sm ${ev.creatorColor}" style="width:18px;height:18px;font-size:8px">${esc(ev.creatorInitial)}</div>
+                ${esc(ev.createdBy)}
               </a>
             </div>
           </div>
@@ -559,19 +566,19 @@ function initResults() {
     const profHref   = _personHref(ev.createdBy);
     return `
       <div class="result-card" onclick="location.href='detalhes.html?id=${ev.id}'">
-        <div class="result-thumb" style="background:${ev.gradient};font-size:22px;color:transparent;text-shadow:0 0 0 white">${ev.sport}</div>
+        <div class="result-thumb" style="background:${ev.gradient};font-size:22px">${ev.sport}</div>
         <div class="result-info">
-          <div class="result-name">${ev.title}</div>
-          <div class="result-addr">${ev.address}</div>
+          <div class="result-name">${esc(ev.title)}</div>
+          <div class="result-addr">${esc(ev.address)}</div>
           <div class="result-tags">
             <span class="tag">${Store.fmt.short(ev.datetime)}</span>
-            <span class="tag">${ev.ageRange}</span>
+            <span class="tag">${esc(ev.ageRange)}</span>
             ${alreadyIn ? '<span class="tag" style="background:var(--green-light);color:var(--green-dark)">Na agenda ✓</span>' : ''}
           </div>
           <div class="result-creator">
             <a href="${profHref}" class="creator-link" onclick="event.stopPropagation()">
-              <div class="avatar av-sm ${ev.creatorColor}" style="width:20px;height:20px;font-size:9px">${ev.creatorInitial}</div>
-              Criado por <b>${ev.createdBy}</b>
+              <div class="avatar av-sm ${ev.creatorColor}" style="width:20px;height:20px;font-size:9px">${esc(ev.creatorInitial)}</div>
+              Criado por <b>${esc(ev.createdBy)}</b>
             </a>
           </div>
         </div>
@@ -610,8 +617,8 @@ function initDetails() {
   if (creatorEl) {
     const href = _personHref(ev.createdBy);
     creatorEl.innerHTML = `<a href="${href}" class="creator-link">
-      <div class="avatar av-xs ${ev.creatorColor}" style="width:26px;height:26px;font-size:10px">${ev.creatorInitial}</div>
-      <span>Criado por <b>${ev.createdBy}</b></span>
+      <div class="avatar av-xs ${ev.creatorColor}" style="width:26px;height:26px;font-size:10px">${esc(ev.creatorInitial)}</div>
+      <span>Criado por <b>${esc(ev.createdBy)}</b></span>
     </a>`;
   }
 
@@ -792,8 +799,8 @@ function initInvite() {
     <div class="friend-item" data-idx="${i}">
       <div class="avatar av-md ${f.color}">${f.initial}</div>
       <div class="friend-info">
-        <div class="friend-name">${f.name}</div>
-        <div class="friend-sport">${f.sports.map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' · ')}</div>
+        <div class="friend-name">${esc(f.name)}</div>
+        <div class="friend-sport">${esc(f.sports.map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' · '))}</div>
       </div>
       <div class="friend-check" id="fcheck-${i}"></div>
     </div>`).join('');
@@ -1204,10 +1211,10 @@ function initLista() {
       <div class="lista-header">${friends.length} amigo${friends.length !== 1 ? 's' : ''}</div>
       ${friends.map(f => `
         <a href="amigo.html?id=${f.id}" class="friend-item" style="text-decoration:none;color:inherit">
-          <div class="avatar av-md ${f.color}">${f.initial}</div>
+          <div class="avatar av-md ${f.color}">${esc(f.initial)}</div>
           <div class="friend-info">
-            <div class="friend-name">${f.name}</div>
-            <div class="friend-sport">${f.sports.map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' · ')}</div>
+            <div class="friend-name">${esc(f.name)}</div>
+            <div class="friend-sport">${esc(f.sports.map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' · '))}</div>
           </div>
           <div style="color:var(--text-4);font-size:18px">›</div>
         </a>`).join('')}`;
@@ -1225,8 +1232,8 @@ function initLista() {
             <div class="event-date-num">${Store.fmt.day(ev.datetime)}</div>
           </div>
           <div class="event-row-info">
-            <div class="event-row-name">${ev.sport} ${ev.title}</div>
-            <div class="event-row-sub">${Store.fmt.time(ev.datetime)} · ${ev.local}</div>
+            <div class="event-row-name">${esc(ev.sport)} ${esc(ev.title)}</div>
+            <div class="event-row-sub">${Store.fmt.time(ev.datetime)} · ${esc(ev.local)}</div>
           </div>
           <div class="event-row-arrow">›</div>
         </a>`).join('')}`;
@@ -1244,8 +1251,8 @@ function initLista() {
             <div class="event-date-num">${Store.fmt.day(ev.datetime)}</div>
           </div>
           <div class="event-row-info">
-            <div class="event-row-name">${ev.sport} ${ev.title}</div>
-            <div class="event-row-sub">${Store.fmt.time(ev.datetime)} · ${ev.local}</div>
+            <div class="event-row-name">${esc(ev.sport)} ${esc(ev.title)}</div>
+            <div class="event-row-sub">${Store.fmt.time(ev.datetime)} · ${esc(ev.local)}</div>
           </div>
           <div class="event-row-arrow">›</div>
         </a>`).join('')}`;
@@ -1389,10 +1396,10 @@ function initNotifications() {
           return `
           <div class="notif-item" id="notif-${n.id}">
             <a href="${ph}" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;flex:1;min-width:0">
-              <div class="avatar av-md ${n.fromColor}">${n.fromInitial}</div>
+              <div class="avatar av-md ${n.fromColor}">${esc(n.fromInitial)}</div>
               <div class="notif-info-wrap">
-                <div class="notif-name">${n.from}</div>
-                <div class="notif-sport">${n.sport} · ${Store.fmt.short(n.datetime)} · ${n.local}</div>
+                <div class="notif-name">${esc(n.from)}</div>
+                <div class="notif-sport">${esc(n.sport)} · ${Store.fmt.short(n.datetime)} · ${esc(n.local)}</div>
               </div>
             </a>
             <div class="notif-actions">
@@ -1413,10 +1420,10 @@ function initNotifications() {
           return `
           <div class="notif-item" id="notif-${n.id}">
             <a href="${ph}" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;flex:1;min-width:0">
-              <div class="avatar av-md ${n.fromColor}">${n.fromInitial}</div>
+              <div class="avatar av-md ${n.fromColor}">${esc(n.fromInitial)}</div>
               <div class="notif-info-wrap">
-                <div class="notif-name">${n.from}</div>
-                <div class="notif-sport">${n.sport}</div>
+                <div class="notif-name">${esc(n.from)}</div>
+                <div class="notif-sport">${esc(n.sport)}</div>
               </div>
             </a>
             <div class="notif-actions">
@@ -1428,7 +1435,7 @@ function initNotifications() {
       }
     }
 
-    $$('[data-id]').forEach(btn => {
+    $$('#invites-list [data-id], #friends-list [data-id]').forEach(btn => {
       btn.addEventListener('click', () => {
         const nid  = btn.dataset.id;
         const item = document.getElementById('notif-' + nid);
