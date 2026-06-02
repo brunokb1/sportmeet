@@ -50,9 +50,10 @@ function buildAvatarRow(participants, limit) {
     const av = `<div class="avatar av-sm ${p.c}" title="${esc(p.name||p.i)}">${esc(p.i)}</div>`;
     if (!p.name) return av;
     const href = _personHref(p.name);
+    if (!href) return av;
     return `<a href="${href}" style="display:inline-flex;line-height:0;border-radius:50%;transition:transform .15s" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''">${av}</a>`;
   }).join('')
-  + (rest > 0 ? `<div class="avatar av-sm av-green" style="font-size:10px">+${rest}</div>` : '');
+  + (rest > 0 ? `<div class="avatar av-sm av-gray" style="font-size:10px">+${rest}</div>` : '');
 }
 
 function buildEventBanner(ev) {
@@ -106,12 +107,15 @@ function _inPages() { return location.pathname.includes('/pages/'); }
 function _detailsHref(id) { return (_inPages() ? '' : 'pages/') + 'detalhes.html?id=' + id; }
 
 /* ── person profile link ── resolves to friend page if known, else stranger view */
+function _normalize(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
 function _personHref(name, explicitId) {
+  if (!name && !explicitId) return null;
   const base = _inPages() ? '' : 'pages/';
   if (explicitId) return base + 'amigo.html?id=' + explicitId;
-  const match = Store.getFriends().find(f => f.name.toLowerCase() === (name||'').toLowerCase());
+  const match = Store.getFriends().find(f => _normalize(f.name) === _normalize(name));
   if (match) return base + 'amigo.html?id=' + match.id;
-  return base + 'amigo.html?name=' + encodeURIComponent(name || 'Usuário');
+  if (!name) return null;
+  return base + 'amigo.html?name=' + encodeURIComponent(name);
 }
 
 function initHome() {
@@ -152,7 +156,11 @@ function _renderHomeInvites() {
 }
 
 function _renderHomeWeek() {
-  const myEvs = Store.getMyEvents();
+  const now   = new Date();
+  const next7 = new Date(now); next7.setDate(now.getDate() + 7);
+  const myEvs = Store.getMyEvents()
+    .filter(ev => { const d = new Date(ev.datetime); return d >= now && d < next7; })
+    .sort((a,b) => a.datetime.localeCompare(b.datetime));
   const container = document.getElementById('week-events');
   if (!container) return;
   if (myEvs.length === 0) {
@@ -889,7 +897,7 @@ function initCreated() {
   if (detBtn) detBtn.href = 'detalhes.html?id=' + ev.id;
 
   document.getElementById('btn-share')?.addEventListener('click', () => {
-    const url = location.origin + '/pages/detalhes.html?id=' + ev.id;
+    const url = location.origin + location.pathname.replace(/[^/]*$/, '') + 'detalhes.html?id=' + ev.id;
     navigator.clipboard?.writeText(url)
       .then(() => showToast('Link copiado! 🔗'))
       .catch(() => showToast('Compartilhe o link do evento! 🔗'));
@@ -952,7 +960,7 @@ function _renderCalendar() {
   function render() {
     document.getElementById('cal-month').textContent = MONTHS_FULL[month] + ' ' + year;
     grid.innerHTML = '';
-    ['S','T','Q','Q','S','S','D'].forEach(h => {
+    ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].forEach(h => {
       const el = document.createElement('div'); el.className='cal-head'; el.textContent=h; grid.appendChild(el);
     });
     const firstDay = new Date(year,month,1).getDay();
@@ -1218,9 +1226,17 @@ function _openEditModal() {
 }
 
 function resetDemo() {
+  if (!confirm('Tem certeza? Isso apaga todos os dados locais da demonstração.')) return;
   Store.reset();
+  showToast('Dados resetados ✓');
   const isPages = location.pathname.includes('/pages/');
-  window.location.href = isPages ? '../index.html' : 'index.html';
+  setTimeout(() => { window.location.href = isPages ? '../index.html' : 'index.html'; }, 1000);
+}
+
+function confirmarSaida() {
+  if (!confirm('Deseja sair? Seus dados locais serão mantidos.')) return;
+  showToast('Até logo! 👋');
+  setTimeout(() => { window.location.href = '../index.html'; }, 1500);
 }
 
 /* ============================================================

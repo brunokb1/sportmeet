@@ -163,6 +163,7 @@ body {
 .av-green  { background: var(--green); }
 .av-red    { background: var(--red); }
 .av-yellow { background: var(--yellow); color: #713F12; }
+.av-gray   { background: var(--text-4); color: #fff; }
 
 /* ============================================================
    Screen / Content area
@@ -256,7 +257,8 @@ body {
 }
 .btn-ghost { background: transparent; color: var(--text-2); }
 
-.btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-row .btn { flex: 1; min-width: 120px; }
 .btn-sm  { padding: 11px 14px; font-size: 13px; border-radius: var(--r-sm); }
 
 /* ============================================================
@@ -659,7 +661,7 @@ body {
 }
 .cal-head {
   text-align: center;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--text-4);
   padding: 3px 0 6px;
