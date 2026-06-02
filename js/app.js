@@ -31,6 +31,12 @@ function showToast(msg, dur) {
   t._t = setTimeout(() => { t.style.opacity = '0'; }, dur || 2800);
 }
 
+function goBack() {
+  if (history.length > 1) { history.back(); return; }
+  const inPg = location.pathname.includes('/pages/');
+  window.location.href = inPg ? '../index.html' : 'index.html';
+}
+
 function buildAvatarRow(participants, limit) {
   const sl = participants.slice(0, limit || 5);
   const rest = participants.length - sl.length;
@@ -629,14 +635,16 @@ function initDetails() {
     if (btnAdd)    btnAdd.style.display    = 'none';
     if (btnCancel) {
       btnCancel.style.display = '';
-      btnCancel.href = 'confirmar-cancelamento.html?id=' + ev.id;
+      btnCancel.textContent = ev.source === 'created' ? 'CANCELAR EVENTO' : 'SAIR DO EVENTO';
+      btnCancel.addEventListener('click', () => {
+        window.location.href = 'confirmar-cancelamento.html?id=' + ev.id;
+      });
     }
   } else {
     if (btnCancel) btnCancel.style.display = 'none';
     if (btnAdd) {
       btnAdd.style.display = '';
-      btnAdd.addEventListener('click', e => {
-        e.preventDefault();
+      btnAdd.addEventListener('click', () => {
         Store.setPending('eventId', ev.id);
         Store.joinEvent({ ...ev, source:'search' });
         window.location.href = 'adicionado-agenda.html';
@@ -964,7 +972,9 @@ function initCancelConfirm() {
     setText('ev-cancel-date', Store.fmt.full(ev.datetime) + '?');
   }
   const simBtn = document.getElementById('btn-sim-cancelar');
-  if (simBtn) simBtn.href = 'evento-cancelado.html?id=' + id;
+  if (simBtn) simBtn.addEventListener('click', () => {
+    window.location.href = 'evento-cancelado.html?id=' + id;
+  });
 }
 
 /* ============================================================

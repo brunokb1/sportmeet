@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>SportMeet — Detalhes do Evento</title>
   <link rel="stylesheet" href="../css/style.css?v=4">
 </head>
@@ -10,7 +10,7 @@
 <div class="app">
 
   <div class="screen-header">
-    <button class="back-btn" onclick="window.history.back()">
+    <button class="back-btn" onclick="goBack()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <span class="screen-title" id="det-title">Detalhes do evento</span>
@@ -83,9 +83,9 @@
 
     <!-- Botões -->
     <div class="btn-row">
-      <button class="btn btn-outline" onclick="window.history.back()">VOLTAR</button>
-      <a href="#" class="btn btn-green" id="btn-add">ADICIONAR À AGENDA</a>
-      <a href="#" class="btn btn-red"   id="btn-cancel" style="display:none">CANCELAR PARTICIPAÇÃO</a>
+      <button class="btn btn-outline" onclick="goBack()">VOLTAR</button>
+      <button type="button" class="btn btn-green" id="btn-add">ADICIONAR À AGENDA</button>
+      <button type="button" class="btn btn-red" id="btn-cancel" style="display:none">CANCELAR PARTICIPAÇÃO</button>
     </div>
 
   </div>
