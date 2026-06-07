@@ -15,10 +15,13 @@ function showToast(msg, dur) {
   if (!t) {
     t = document.createElement('div');
     t.id = 'sm-toast';
+    t.setAttribute('role', 'status');
+    t.setAttribute('aria-live', 'polite');
+    t.setAttribute('aria-atomic', 'true');
     Object.assign(t.style, {
       position:'fixed', bottom:'calc(80px + env(safe-area-inset-bottom,0px))', left:'50%',
       transform:'translateX(-50%)',
-      background:'#111827', color:'#fff', padding:'10px 20px', borderRadius:'24px',
+      background:'var(--text-1)', color:'#fff', padding:'10px 20px', borderRadius:'24px',
       fontSize:'13px', fontWeight:'600', boxShadow:'0 4px 16px rgba(0,0,0,.25)',
       zIndex:'9999', whiteSpace:'nowrap', opacity:'0', transition:'opacity .25s',
       maxWidth:'85vw', textAlign:'center', pointerEvents:'none',
@@ -611,6 +614,23 @@ function initDetails() {
   setText('det-title',     ev.title);
   setText('det-map-label', ev.address || ev.local);
 
+  // OpenStreetMap embed
+  const mapBox = document.querySelector('.map-box');
+  if (mapBox) {
+    const query = encodeURIComponent((ev.address || ev.local) + ', São Paulo');
+    mapBox.innerHTML = `
+      <iframe class="map-frame"
+        src="https://www.openstreetmap.org/export/embed.html?bbox=-46.7,-23.6,-46.5,-23.5&amp;layer=mapnik&amp;marker=-23.55,-46.63"
+        loading="lazy" title="Mapa do local do evento" aria-label="${esc(ev.address || ev.local)}"></iframe>
+      <div class="map-pin-wrap" style="position:absolute;bottom:8px;left:0;right:0;text-align:center;pointer-events:none">
+        <span style="background:rgba(255,255,255,.9);border-radius:16px;padding:2px 10px;font-size:12px;font-weight:600;color:var(--text-1)">📍 ${esc(ev.address || ev.local)}</span>
+      </div>`;
+    mapBox.style.position = 'relative';
+    mapBox.style.overflow = 'hidden';
+    mapBox.style.height = '160px';
+    mapBox.style.padding = '0';
+  }
+
   const bannerWrap = document.getElementById('det-banner');
   if (bannerWrap) bannerWrap.innerHTML = buildEventBanner(ev);
 
@@ -1095,27 +1115,6 @@ function initProfile() {
   document.getElementById('btn-edit-profile')?.addEventListener('click', _openEditModal);
 }
 
-function _renderProfileEvents() {
-  const container = document.getElementById('prof-events-list');
-  if (!container) return;
-  const evs = Store.getMyEvents().sort((a,b) => a.datetime.localeCompare(b.datetime));
-  if (evs.length === 0) {
-    container.innerHTML = '<div style="color:var(--text-4);font-size:13px;padding:12px 0 4px">Sem outros eventos na agenda.</div>';
-    return;
-  }
-  container.innerHTML = evs.map(ev => `
-    <a href="detalhes.html?id=${ev.id}" class="event-row" style="text-decoration:none;color:inherit;margin-bottom:8px">
-      <div class="event-date">
-        <div class="event-date-day">${Store.fmt.dow(ev.datetime)}</div>
-        <div class="event-date-num">${Store.fmt.day(ev.datetime)}</div>
-      </div>
-      <div class="event-row-info">
-        <div class="event-row-name">${ev.sport} ${ev.title}</div>
-        <div class="event-row-sub">${Store.fmt.time(ev.datetime)} · ${ev.local}</div>
-      </div>
-      <div class="event-row-arrow">›</div>
-    </a>`).join('');
-}
 
 function _openEditModal() {
   const u = Store.getUser();
@@ -1236,7 +1235,8 @@ function resetDemo() {
 function confirmarSaida() {
   if (!confirm('Deseja sair? Seus dados locais serão mantidos.')) return;
   showToast('Até logo! 👋');
-  setTimeout(() => { window.location.href = '../index.html'; }, 1500);
+  const isPages = location.pathname.includes('/pages/');
+  setTimeout(() => { window.location.href = isPages ? '../index.html' : 'index.html'; }, 1500);
 }
 
 /* ============================================================
@@ -1359,10 +1359,26 @@ function initFriendProfile() {
           </a>`).join('');
     }
 
-    // Already a friend — show confirmed state
+    // Already a friend — show confirmed state + remove option
     if (followBtn) {
       followBtn.textContent = 'Amigo ✓';
       followBtn.className   = 'profile-edit btn-friend-confirmed';
+    }
+
+    // "Remover amigo" button
+    const heroEl = document.querySelector('.profile-hero') || document.querySelector('.profile-info');
+    if (heroEl) {
+      const removeBtn = document.createElement('button');
+      removeBtn.className   = 'btn-friend-remove';
+      removeBtn.textContent = 'Remover amigo';
+      removeBtn.addEventListener('click', () => {
+        if (!confirm('Remover ' + friend.name + ' dos seus amigos?')) return;
+        Store.removeFriend(id);
+        showToast('Amigo removido.');
+        setTimeout(() => goBack(), 1200);
+      });
+      const sc = document.querySelector('.screen-content');
+      if (sc) sc.appendChild(removeBtn);
     }
 
   } else if (nameParam) {

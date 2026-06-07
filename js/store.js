@@ -399,6 +399,7 @@ const Store = {
   getFriends()          { return this._s.friends; },
   getFriendById(id)     { return this._s.friends.find(f => f.id === id) || null; },
   getFriendEvents(id)   { return FRIEND_EVENTS[id] || []; },
+  removeFriend(id)      { this._s.friends = this._s.friends.filter(f => f.id !== id); this._s.stats.friends = this._s.friends.length; this._save(); },
   getLocations()        { return SP_LOCATIONS; },
   getActivities()       { return SP_ACTIVITIES; },
   getBairros()          { return SP_BAIRROS; },

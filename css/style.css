@@ -59,8 +59,9 @@ body {
 
 /* ── Phone shell ── */
 .app {
-  width: 390px;
-  height: 844px;
+  width: 100%;
+  max-width: 390px;
+  min-height: 100dvh;
   background: var(--bg);
   border-radius: 44px;
   box-shadow: 0 24px 64px rgba(0,0,0,.25);
@@ -70,9 +71,17 @@ body {
   position: relative;
 }
 
+@media (min-width: 768px) {
+  body { padding: 28px 0 40px; }
+}
 @media (max-width: 430px) {
   body { background: var(--bg); padding: 0; display: block; }
-  .app { width: 100%; border-radius: 0; box-shadow: none; min-height: 100vh; }
+  .app { border-radius: 0; box-shadow: none; }
+  .form-input, .search-bar input { font-size: 16px; }
+}
+@media (max-width: 389px) {
+  body { padding: 0; }
+  .app { border-radius: 0; }
 }
 
 
@@ -1456,8 +1465,10 @@ textarea.form-input { resize: none; height: 90px; line-height: 1.5; }
   transition: opacity .1s;
   z-index: 10;
 }
-.swipe-overlay.left  { left: 14px;  color: var(--red);   border-color: var(--red);   transform: rotate(8deg); }
-.swipe-overlay.right { right: 14px; color: var(--green); border-color: var(--green); transform: rotate(-8deg); }
+.swipe-overlay.left  { left: 14px;  color: var(--red);   border-color: var(--red);   transform: rotate(8deg)  scale(.88); }
+.swipe-overlay.right { right: 14px; color: var(--green); border-color: var(--green); transform: rotate(-8deg) scale(.88); }
+.swipe-overlay[style*="opacity: 1"], .swipe-overlay[style*="opacity:1"] { transform: rotate(8deg) scale(1); }
+.swipe-overlay.right[style*="opacity: 1"], .swipe-overlay.right[style*="opacity:1"] { transform: rotate(-8deg) scale(1); }
 
 /* ============================================================
    Age range sliders
@@ -1842,4 +1853,41 @@ textarea.form-input { resize: none; height: 90px; line-height: 1.5; }
   cursor: default !important;
   pointer-events: none;
   font-size: 13px !important;
+}
+
+/* ── nav-plus variante verde (criar-evento) ── */
+.nav-plus.green { background: var(--green); box-shadow: 0 6px 16px rgba(34,197,94,.4); }
+
+/* ── Skeleton loading ── */
+@keyframes skeleton-pulse {
+  0%   { opacity: 1; }
+  50%  { opacity: .4; }
+  100% { opacity: 1; }
+}
+.skeleton {
+  background: var(--border);
+  border-radius: var(--r-sm);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  color: transparent !important;
+  user-select: none;
+  pointer-events: none;
+}
+.skeleton-line   { height: 14px; border-radius: 7px; margin-bottom: 8px; background: var(--border); animation: skeleton-pulse 1.4s ease-in-out infinite; }
+.skeleton-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--border); animation: skeleton-pulse 1.4s ease-in-out infinite; flex-shrink: 0; }
+
+/* ── map iframe ── */
+.map-frame { width: 100%; height: 150px; border: none; }
+
+/* ── live search hint ── */
+.live-hint { padding: 16px 4px; font-size: 13px; color: var(--text-4); text-align: center; }
+
+/* ── Swipe overlay scale transition ── */
+.swipe-overlay { transition: opacity .1s, transform .15s; }
+
+/* ── btn-friend-remove ── */
+.btn-friend-remove {
+  background: var(--red-light);
+  color: var(--red);
+  border: 1.5px solid var(--red);
+  font-size: 13px;
 }
