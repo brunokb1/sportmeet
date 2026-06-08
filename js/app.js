@@ -158,6 +158,59 @@ function initHome() {
   _renderFeed();
   _renderFriendsActive();
   _updateBadge();
+  _initPullToRefresh();
+}
+
+function _initPullToRefresh() {
+  const el = document.querySelector('.screen-content, .home-screen');
+  if (!el) return;
+  let startY = 0, pulling = false;
+
+  // indicator
+  let indicator = document.getElementById('ptr-indicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'ptr-indicator';
+    Object.assign(indicator.style, {
+      position:'fixed', top:'-56px', left:'50%', transform:'translateX(-50%)',
+      background:'var(--green)', color:'#fff', borderRadius:'0 0 12px 12px',
+      padding:'10px 20px', fontSize:'13px', fontWeight:'700',
+      transition:'top .2s', zIndex:'1500', pointerEvents:'none',
+    });
+    indicator.textContent = '↓ Solte para atualizar';
+    document.body.appendChild(indicator);
+  }
+
+  el.addEventListener('touchstart', e => {
+    if (el.scrollTop === 0) { startY = e.touches[0].clientY; pulling = true; }
+  }, { passive: true });
+
+  el.addEventListener('touchmove', e => {
+    if (!pulling) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 60) indicator.style.top = '0';
+    else indicator.style.top = '-56px';
+  }, { passive: true });
+
+  el.addEventListener('touchend', () => {
+    if (!pulling) return;
+    pulling = false;
+    if (indicator.style.top === '0px') {
+      indicator.textContent = '↻ Atualizando...';
+      setTimeout(() => {
+        indicator.style.top = '-56px';
+        indicator.textContent = '↓ Solte para atualizar';
+        _renderHomeWeek();
+        _renderHomeInvites();
+        _renderFeed();
+        _renderFriendsActive();
+        _updateBadge();
+        showToast('Atualizado ✓');
+      }, 800);
+    } else {
+      indicator.style.top = '-56px';
+    }
+  });
 }
 
 function _renderFeedSportChips() {
@@ -1348,6 +1401,33 @@ function initProfile() {
     setText('prof-next-day',  Store.fmt.day(ev.datetime));
   } else if (nextEl) {
     nextEl.style.display = 'none';
+  }
+
+  /* histórico de eventos passados (4.11) */
+  const sc = document.querySelector('.screen-content');
+  if (sc) {
+    const past = Store.getMyEvents()
+      .filter(ev => new Date(ev.datetime) < new Date())
+      .sort((a,b) => b.datetime.localeCompare(a.datetime))
+      .slice(0, 6);
+    if (past.length > 0) {
+      const section = document.createElement('div');
+      section.innerHTML = `
+        <div class="section-label mb-8" style="margin-top:8px">Histórico</div>
+        ${past.map(ev => `
+          <a href="detalhes.html?id=${ev.id}" class="event-row mb-8 past-event" style="text-decoration:none;color:inherit;filter:grayscale(.5);opacity:.75">
+            <div class="event-date">
+              <div class="event-date-day">${Store.fmt.dow(ev.datetime)}</div>
+              <div class="event-date-num">${Store.fmt.day(ev.datetime)}</div>
+            </div>
+            <div class="event-row-info">
+              <div class="event-row-name">${ev.sport} ${esc(ev.title)}</div>
+              <div class="event-row-sub">${Store.fmt.time(ev.datetime)} · ${esc(ev.local)}</div>
+            </div>
+            <span class="tag" style="flex-shrink:0;font-size:10px;background:var(--border);color:var(--text-3)">Concluído</span>
+          </a>`).join('')}`;
+      sc.appendChild(section);
+    }
   }
 
   /* editar perfil */

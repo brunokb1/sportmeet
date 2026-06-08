@@ -301,14 +301,26 @@ body {
   border-radius: var(--r);
   padding: 12px 14px;
   box-shadow: var(--sh-sm);
+  border-left: 3px solid transparent;
 }
+.home-card-events  { border-left-color: var(--green); }
+.home-card-invites { border-left-color: var(--orange); }
+.home-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.home-card-icon { color: var(--text-4); }
+.home-card-events  .home-card-icon { color: var(--green); }
+.home-card-invites .home-card-icon { color: var(--orange); }
 .home-card-title {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: .8px;
   text-transform: uppercase;
   color: var(--text-4);
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 .mini-event {
   display: flex;
