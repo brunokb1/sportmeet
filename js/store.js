@@ -235,6 +235,7 @@ function _defaultState() {
 /* ── Store ──────────────────────────────────────────────────── */
 const Store = {
   _s: null,
+  _memoryOnly: false,   // true when localStorage is unavailable (incognito, quota, etc.)
 
   load() {
     try {
@@ -246,7 +247,16 @@ const Store = {
     return this;
   },
 
-  _save() { localStorage.setItem(STORE_KEY, JSON.stringify(this._s)); },
+  _save() {
+    if (this._memoryOnly) return; // already known unavailable — operate silently in memory
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(this._s));
+    } catch (err) {
+      // Storage blocked (private/incognito mode) or quota exceeded — fall back to memory-only.
+      this._memoryOnly = true;
+      console.warn('[SportMeet] localStorage indisponível — operando apenas em memória.', err);
+    }
+  },
 
   reset() { this._s = _defaultState(); this._save(); },
 

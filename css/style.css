@@ -35,6 +35,23 @@
 
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-head: 'Poppins', 'Inter', sans-serif;
+
+  /* ── typography scale ── */
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-md:   17px;
+  --text-lg:   20px;
+  --text-xl:   24px;
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  /* ── surface aliases (used by dark-mode override) ── */
+  --bg-1:   var(--bg);
+  --bg-2:   var(--surface);
+  --bg-card: var(--surface);
 }
 
 /* ── Reset ── */
@@ -766,6 +783,14 @@ body {
   transition: border-color .15s;
 }
 .form-input:focus { border-color: var(--green); }
+.form-input.input-error { border-color: var(--red); }
+.form-error {
+  display: none;
+  font-size: 12px;
+  color: var(--red);
+  margin-top: 4px;
+  padding-left: 2px;
+}
 textarea.form-input { resize: none; height: 90px; line-height: 1.5; }
 
 .toggle-row {
@@ -1751,6 +1776,11 @@ textarea.form-input { resize: none; height: 90px; line-height: 1.5; }
   position: absolute;
   top: 12px;
   left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 /* Override badge for dark bg */
@@ -1890,4 +1920,132 @@ textarea.form-input { resize: none; height: 90px; line-height: 1.5; }
   color: var(--red);
   border: 1.5px solid var(--red);
   font-size: 13px;
+}
+
+/* ── bell notification badge ── */
+.bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* ── spots counter (feed cards) ── */
+.spots-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.18);
+}
+.spots-counter.high   { color: #BBF7D0; }
+.spots-counter.medium { color: #FDE68A; }
+.spots-counter.low    { color: #FECACA; }
+
+/* ── sort pills (resultados) ── */
+.sort-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.sort-pill {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 18px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg-2);
+  color: var(--text-3);
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.sort-pill.active {
+  background: var(--green-light);
+  color: var(--green-dark);
+  border-color: var(--green);
+}
+
+/* ── focus visibility (a11y) ── */
+a:focus-visible, button:focus-visible, input:focus-visible,
+textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+/* ── button loading spinner ── */
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+.btn-spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: btn-spin .6s linear infinite;
+  vertical-align: -3px;
+  margin-right: 7px;
+}
+.btn-outline .btn-spinner { border-color: rgba(34,197,94,.3); border-top-color: var(--green); }
+
+/* ── card entrance animation ── */
+@keyframes card-slide-up {
+  from { opacity: 0; transform: translateY(24px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.swipe-card.entering { animation: card-slide-up .4s ease both; }
+
+/* ── nav icon active fill ── */
+.nav-item svg { fill: none; }
+.nav-item.active svg[viewBox="0 0 24 24"][stroke] { fill: rgba(34,197,94,.18); }
+
+/* ── QR modal ── */
+.qr-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center; z-index: 3000;
+  padding: 20px;
+}
+.qr-modal-box {
+  background: var(--bg-card); border-radius: var(--r); padding: 24px;
+  text-align: center; max-width: 280px; width: 100%;
+}
+.qr-modal-box img { width: 100%; max-width: 200px; border-radius: 12px; margin: 12px 0; }
+
+/* ── dark mode ── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-1: #0F172A;
+    --bg-2: #1E293B;
+    --bg-card: #1E293B;
+    --text-1: #F1F5F9;
+    --text-2: #CBD5E1;
+    --text-3: #94A3B8;
+    --text-4: #64748B;
+    --border: #334155;
+  }
+  body { background: var(--bg-1); }
+  .app { background: var(--bg-1); box-shadow: none; }
+  .form-input, .search-bar, .search-filter-btn, .sort-pill, .period-pill,
+  .home-card, .event-row, .result-card, .friend-item, .menu-item, .stat-item-link {
+    background: var(--bg-2);
+    border-color: var(--border);
+    color: var(--text-1);
+  }
+  .bottom-nav { background: var(--bg-2); border-top-color: var(--border); }
+  .skeleton, .skeleton-line, .skeleton-avatar { background: var(--border); }
 }

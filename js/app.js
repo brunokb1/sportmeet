@@ -77,9 +77,26 @@ function _gradientColor(g) {
   return m ? m[0] : '#22C55E';
 }
 
+/* ── page entrance animation ── */
+function _animatePageIn() {
+  const sc = document.querySelector('.screen-content, .home-screen');
+  if (!sc) return;
+  sc.style.opacity    = '0';
+  sc.style.transform  = 'translateY(10px)';
+  sc.style.transition = 'none';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      sc.style.transition = 'opacity .22s ease, transform .22s ease';
+      sc.style.opacity    = '';
+      sc.style.transform  = '';
+    });
+  });
+}
+
 /* ── roteador ── */
 document.addEventListener('DOMContentLoaded', () => {
   Store.load();
+  _animatePageIn();
   const page = location.pathname.split('/').pop().replace('.html','') || 'index';
   const routes = {
     '':                        initHome,
@@ -180,17 +197,30 @@ function _renderHomeWeek() {
 
 function _updateBadge() {
   const badge = document.getElementById('badge-new');
-  if (!badge) return;
-  const n = Store.getNewCount();
-  if (n <= 0) { badge.style.display = 'none'; return; }
-  badge.textContent = n + ' novo' + (n !== 1 ? 's' : '');
-  badge.style.display = '';
+  if (badge) {
+    const n = Store.getNewCount();
+    if (n <= 0) { badge.style.display = 'none'; }
+    else { badge.textContent = n + ' novo' + (n !== 1 ? 's' : ''); badge.style.display = ''; }
+  }
+
+  // Bell icon badge — count of pending notifications
+  const bell = document.getElementById('bell-badge');
+  if (bell) {
+    const count = Store.getNotifications().length;
+    if (count <= 0) { bell.style.display = 'none'; }
+    else { bell.textContent = count > 9 ? '9+' : String(count); bell.style.display = ''; }
+  }
 }
 
 /* ── feed / swipe ── */
+let _feedDragAbort = null;
+
 function _renderFeed() {
   const stack = document.getElementById('swipe-stack');
   if (!stack) return;
+
+  // Cancel any drag listeners from a previous render to avoid leaks
+  if (_feedDragAbort) { _feedDragAbort.abort(); _feedDragAbort = null; }
 
   // Fresh clone action buttons to remove stale listeners
   ['btn-accept','btn-reject'].forEach(id => {
@@ -211,6 +241,9 @@ function _renderFeed() {
     const descRaw = card.description ? card.description.slice(0, 80) + (card.description.length > 80 ? '…' : '') : '';
     const desc   = esc(descRaw);
     const profileHref = _personHref(card.createdBy);
+    const spotsLeft = (card.maxParticipants || 0) - (card.participants ? card.participants.length : 0);
+    const spotsPct  = card.maxParticipants ? spotsLeft / card.maxParticipants : 1;
+    const spotsCls  = spotsPct < 0.1 ? 'low' : spotsPct < 0.3 ? 'medium' : 'high';
     return `
       <div class="swipe-card ${cls}" ${frontId} style="user-select:none">
         ${i === 0 ? `
@@ -223,6 +256,7 @@ function _renderFeed() {
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
               ${esc(card.ageRange)}
             </div>
+            ${spotsLeft > 0 ? `<div class="spots-counter ${spotsCls}">👥 ${spotsLeft} vaga${spotsLeft !== 1 ? 's' : ''}</div>` : ''}
           </div>
           <div class="card-emoji-xl">${card.sport}</div>
           <div class="card-info-overlay">
@@ -268,13 +302,17 @@ function _renderFeed() {
       dragging = true;
       frontCard.style.transform = `translateX(${dx}px) rotate(${dx * 0.07}deg)`;
       frontCard.style.opacity   = String(Math.max(0.3, 1 - Math.abs(dx) / 260));
-      // Show directional label
+      // Show directional label + haptic feedback at threshold
+      const wasOverThreshold = frontCard._overThreshold;
+      frontCard._overThreshold = Math.abs(dx) > 80;
+      if (frontCard._overThreshold && !wasOverThreshold) navigator.vibrate?.(30);
       if (labelNo)  labelNo.style.opacity  = dx < 0 ? String(Math.min(1, Math.abs(dx) / 70)) : '0';
       if (labelYes) labelYes.style.opacity = dx > 0 ? String(Math.min(1, Math.abs(dx) / 70)) : '0';
     }, { passive: true });
 
     frontCard.addEventListener('touchend', () => {
       frontCard.style.transition = 'transform .35s ease, opacity .35s ease';
+      frontCard._overThreshold = false;
       if (labelNo)  labelNo.style.opacity  = '0';
       if (labelYes) labelYes.style.opacity = '0';
       if (dragging && dx > 80)        { _doAccept(); }
@@ -285,12 +323,15 @@ function _renderFeed() {
 
     /* ── mouse drag (desktop) ── */
     let mouseDown = false;
+    _feedDragAbort = new AbortController();
+    const { signal } = _feedDragAbort;
+
     frontCard.addEventListener('mousedown', e => {
       if (e.target.closest('a')) return; // don't start drag on links
       mouseDown = true; startX = e.clientX; startY = e.clientY; dx = 0; dragging = false;
       frontCard.style.transition = 'none';
       e.preventDefault();
-    });
+    }, { signal });
     document.addEventListener('mousemove', e => {
       if (!mouseDown) return;
       dx = e.clientX - startX;
@@ -302,7 +343,7 @@ function _renderFeed() {
       frontCard.style.opacity   = String(Math.max(0.3, 1 - Math.abs(dx) / 260));
       if (labelNo)  labelNo.style.opacity  = dx < 0 ? String(Math.min(1, Math.abs(dx) / 70)) : '0';
       if (labelYes) labelYes.style.opacity = dx > 0 ? String(Math.min(1, Math.abs(dx) / 70)) : '0';
-    });
+    }, { signal });
     document.addEventListener('mouseup', () => {
       if (!mouseDown) return;
       mouseDown = false;
@@ -313,7 +354,7 @@ function _renderFeed() {
       else if (dragging && dx < -80)  { _doReject(); }
       else { frontCard.style.transform = ''; frontCard.style.opacity = '1'; }
       dx = 0; dragging = false;
-    });
+    }, { signal });
   }
 
   function _doAccept() {
@@ -550,28 +591,62 @@ function _saveSearchFilters() {
 /* ============================================================
    RESULTADOS
    ============================================================ */
+function _sortResults(results, mode) {
+  const arr = [...results];
+  if (mode === 'popular') {
+    arr.sort((a,b) => (b.participants?.length||0) - (a.participants?.length||0));
+  } else if (mode === 'recente') {
+    arr.sort((a,b) => String(b.id).localeCompare(String(a.id)));
+  } else { // 'proximo' — by date ascending
+    arr.sort((a,b) => a.datetime.localeCompare(b.datetime));
+  }
+  return arr;
+}
+
 function initResults() {
   const filters  = Store.getPending('filters') || [];
   const query    = Store.getPending('search')  || '';
-  const results  = Store.search(query, filters);
+  const baseResults = Store.search(query, filters);
   const meta     = document.getElementById('results-meta');
   const list     = document.getElementById('results-list');
   if (!list) return;
 
+  let sortMode = 'proximo';
+
   const terms = query ? [query, ...filters] : [...filters];
   const ctx   = terms.length ? ' · ' + terms.join(' · ') : '';
-  if (meta) meta.innerHTML = `<b>${results.length} resultado${results.length !== 1 ? 's' : ''}</b>${ctx}`;
+  if (meta) meta.innerHTML = `<b>${baseResults.length} resultado${baseResults.length !== 1 ? 's' : ''}</b>${ctx}`;
 
-  if (results.length === 0) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🔍</div>
-        <div class="empty-title">Nenhum resultado encontrado</div>
-        <div class="empty-sub">Tente outros termos ou ajuste os filtros.</div>
-      </div>`;
-    return;
+  // Sort pills
+  $$('.sort-pill').forEach(pill => {
+    pill.addEventListener('click', () => activate(pill));
+    pill.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(pill); } });
+  });
+  function activate(pill) {
+    $$('.sort-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    sortMode = pill.dataset.sort;
+    render();
   }
 
+  function render() {
+    const results = _sortResults(baseResults, sortMode);
+    if (results.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <div class="empty-title">Nenhum resultado encontrado</div>
+          <div class="empty-sub">Tente outros termos ou ajuste os filtros.</div>
+        </div>`;
+      return;
+    }
+    _renderResultsList(list, results);
+  }
+
+  render();
+}
+
+function _renderResultsList(list, results) {
   list.innerHTML = results.map(ev => {
     const alreadyIn  = Store.isMyEvent(ev.id);
     const profHref   = _personHref(ev.createdBy);
@@ -700,13 +775,66 @@ function initDetails() {
       }
     }
   }
+
+  // QR code button
+  const btnQr = document.getElementById('btn-qr');
+  if (btnQr) {
+    btnQr.addEventListener('click', () => _showQrModal(ev));
+  }
+
+  // "Como chegar" button — opens Google Maps with event address
+  const btnDir = document.getElementById('btn-directions');
+  if (btnDir) {
+    btnDir.addEventListener('click', () => {
+      const q = encodeURIComponent((ev.address || ev.local) + ', São Paulo');
+      window.open('https://maps.google.com/?q=' + q, '_blank', 'noopener,noreferrer');
+    });
+  }
+}
+
+function _showQrModal(ev) {
+  document.getElementById('qr-modal')?.remove();
+  const shareUrl = location.origin + location.pathname.replace(/[^/]*$/, '') + 'detalhes.html?id=' + ev.id;
+  const qrUrl    = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(shareUrl);
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'qr-modal';
+  backdrop.className = 'qr-modal-backdrop';
+  backdrop.setAttribute('role', 'dialog');
+  backdrop.setAttribute('aria-modal', 'true');
+  backdrop.setAttribute('aria-label', 'QR Code do evento');
+  backdrop.innerHTML = `
+    <div class="qr-modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-weight:700;font-size:15px">🔲 QR Code</span>
+        <button id="qr-close" aria-label="Fechar" style="font-size:20px;background:none;border:none;cursor:pointer;color:var(--text-3);width:36px;height:36px">✕</button>
+      </div>
+      <p style="font-size:12px;color:var(--text-3);margin-bottom:8px">${esc(ev.title)}</p>
+      <img src="${qrUrl}" alt="QR Code para o evento ${esc(ev.title)}" loading="lazy">
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <a href="${qrUrl}" download="sportmeet-qr.png" class="btn btn-green" style="flex:1;font-size:13px">⬇️ BAIXAR</a>
+        <button type="button" class="btn btn-outline" id="qr-copy-btn" style="flex:1;font-size:13px">🔗 COPIAR LINK</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(backdrop);
+  document.getElementById('qr-close').addEventListener('click', () => backdrop.remove());
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.remove(); });
+  document.getElementById('qr-copy-btn').addEventListener('click', () => {
+    navigator.clipboard?.writeText(shareUrl)
+      .then(() => showToast('Link copiado! 🔗'))
+      .catch(() => showToast('URL: ' + shareUrl));
+  });
+  // Esc to close
+  function onEsc(e) { if (e.key === 'Escape') { backdrop.remove(); document.removeEventListener('keydown', onEsc); } }
+  document.addEventListener('keydown', onEsc);
 }
 
 /* ============================================================
    ADICIONADO À AGENDA
    ============================================================ */
 function initAdded() {
-  const evId = Store.getPending('eventId') || Store._s?._pendingEventId;
+  const evId = Store.getPending('eventId');
   const ev   = evId ? Store.getEventById(evId) : null;
 
   if (ev) {
@@ -791,26 +919,53 @@ function initCreateForm() {
     });
   });
 
+  /* ── inline error helper ── */
+  function setFieldError(id, msg) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = msg ? 'block' : 'none';
+    // Mark sibling input invalid
+    const input = el.previousElementSibling || el.closest('.form-group')?.querySelector('.form-input, .dt-trigger');
+    if (input) { input.classList.toggle('input-error', !!msg); input.setAttribute('aria-invalid', msg ? 'true' : 'false'); }
+  }
+  function clearAllErrors() {
+    ['err-tipo','err-atividade','err-local','err-datetime'].forEach(id => setFieldError(id, ''));
+  }
+
   /* ── proceed ── */
-  document.getElementById('invite-friends-btn')?.addEventListener('click', e => {
-    const local   = document.getElementById('input-local')?.value.trim();
-    const ativ    = document.getElementById('input-atividade')?.value.trim();
-    const tipoVal = document.getElementById('input-tipo')?.value.trim();
-    const dtVal   = document.getElementById('input-datetime')?.value;
-    const duracao = document.getElementById('input-duracao')?.value || '1h';
-    const faixa   = document.getElementById('input-faixa')?.value || 'Livre';
-    const maxPart = document.getElementById('input-max')?.value.trim();
-    const desc    = document.getElementById('input-desc')?.value.trim();
-    const aberto  = !$('.toggle-switch')?.classList.contains('off');
+  document.getElementById('invite-friends-btn')?.addEventListener('click', () => {
+    clearAllErrors();
+    let hasError = false;
+    const local    = document.getElementById('input-local')?.value.trim();
+    const ativ     = document.getElementById('input-atividade')?.value.trim();
+    const tipoVal  = document.getElementById('input-tipo')?.value.trim();
+    const dtVal    = document.getElementById('input-datetime')?.value;
+    const duracao  = document.getElementById('input-duracao')?.value || '1h';
+    const faixa    = document.getElementById('input-faixa')?.value || 'Livre';
+    const maxPart  = document.getElementById('input-max')?.value.trim();
+    const desc     = document.getElementById('input-desc')?.value.trim();
+    const aberto   = !$('.toggle-switch')?.classList.contains('off');
     const localInput2 = document.getElementById('input-local');
     const tipoInput2  = document.getElementById('input-tipo');
 
-    if (!local) { e.preventDefault(); showToast('Informe o local do evento.'); return; }
-    if (!ativ)  { e.preventDefault(); showToast('Informe o título do evento.'); return; }
-    if (!dtVal) { e.preventDefault(); showToast('Selecione a data e hora.'); return; }
-    if (dtVal && new Date(dtVal) <= new Date()) { e.preventDefault(); showToast('A data precisa ser no futuro ⏰'); return; }
-    if (maxPart && (isNaN(parseInt(maxPart)) || parseInt(maxPart) < 2 || parseInt(maxPart) > 100)) { e.preventDefault(); showToast('Máx. participantes: entre 2 e 100'); return; }
-    if (desc && desc.length > 500) { e.preventDefault(); showToast('Descrição muito longa (máx. 500 caracteres)'); return; }
+    if (!tipoVal) { setFieldError('err-tipo', 'Informe o tipo de atividade.'); hasError = true; }
+    if (!ativ || ativ.length < 3) { setFieldError('err-atividade', 'Título obrigatório (mín. 3 caracteres).'); hasError = true; }
+    else if (ativ.length > 60)    { setFieldError('err-atividade', 'Título muito longo (máx. 60 caracteres).'); hasError = true; }
+    if (!local) { setFieldError('err-local', 'Informe o local do evento.'); hasError = true; }
+    if (!dtVal) { setFieldError('err-datetime', 'Selecione a data e hora.'); hasError = true; }
+    else if (new Date(dtVal) <= new Date()) { setFieldError('err-datetime', 'A data precisa ser no futuro ⏰'); hasError = true; }
+    if (maxPart && (isNaN(parseInt(maxPart)) || parseInt(maxPart) < 2 || parseInt(maxPart) > 200)) {
+      showToast('Máx. participantes: entre 2 e 200'); hasError = true;
+    }
+    if (desc && desc.length > 500) { showToast('Descrição muito longa (máx. 500 caracteres)'); hasError = true; }
+
+    if (hasError) {
+      // Scroll to first error
+      const firstErr = document.querySelector('.form-error[style*="block"]');
+      if (firstErr) firstErr.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
 
     // Resolve sport from activity autocomplete
     const slug     = tipoInput2?.dataset.slug  || (tipoVal || 'outro').toLowerCase().replace(/\s+/g,'');
@@ -825,6 +980,7 @@ function initCreateForm() {
       localAddress: localInput2?.dataset.address || local,
       region:       localInput2?.dataset.region  || '',
     });
+    window.location.href = 'convidar-amigos.html';
   });
 }
 
@@ -876,9 +1032,14 @@ function initInvite() {
     const n = selected.size;
     if (countEl)   countEl.textContent   = n + ' SELECIONADO' + (n !== 1 ? 'S' : '');
     if (inviteBtn) {
-      inviteBtn.textContent = 'CONVIDAR · ' + n + ' AMIGO' + (n !== 1 ? 'S' : '');
-      inviteBtn.disabled    = n === 0;
-      inviteBtn.style.opacity = n === 0 ? '0.5' : '1';
+      if (n === 0) {
+        inviteBtn.textContent = 'PULAR CONVITES';
+        inviteBtn.style.opacity = '0.75';
+      } else {
+        inviteBtn.textContent = 'CONVIDAR · ' + n + ' AMIGO' + (n !== 1 ? 'S' : '');
+        inviteBtn.style.opacity = '1';
+      }
+      inviteBtn.disabled = false;
     }
   }
 
@@ -890,7 +1051,17 @@ function initInvite() {
     });
   });
 
-  inviteBtn?.addEventListener('click', () => Store.setPending('selectedFriends', [...selected]));
+  inviteBtn?.addEventListener('click', () => {
+    if (inviteBtn.disabled) return;
+    const createData = Store.getPending('createData');
+    const isPrivate  = createData && createData.aberto === false;
+    if (isPrivate && selected.size === 0) {
+      showToast('Eventos privados exigem ao menos 1 amigo convidado 🔒');
+      return;
+    }
+    Store.setPending('selectedFriends', [...selected]);
+    window.location.href = 'evento-criado.html';
+  });
 
   refresh();
 }
@@ -1895,10 +2066,10 @@ function _showDateTimePicker(onConfirm, initialISO) {
 
   overlay.innerHTML = `
     <div class="dt-picker-backdrop" id="dt-backdrop"></div>
-    <div class="dt-picker-sheet">
+    <div class="dt-picker-sheet" role="dialog" aria-modal="true" aria-labelledby="dt-picker-title-lbl">
       <div class="dt-picker-header">
-        <span class="dt-picker-title">Selecionar Data e Hora</span>
-        <button class="dt-picker-close" id="dt-close">✕</button>
+        <span class="dt-picker-title" id="dt-picker-title-lbl">Selecionar Data e Hora</span>
+        <button class="dt-picker-close" id="dt-close" aria-label="Fechar seletor de data e hora">✕</button>
       </div>
       <div class="dt-cal-nav">
         <button class="dt-cal-arrow" id="dt-prev">‹</button>
@@ -1919,6 +2090,26 @@ function _showDateTimePicker(onConfirm, initialISO) {
 
   document.body.appendChild(overlay);
   requestAnimationFrame(() => overlay.querySelector('.dt-picker-sheet').classList.add('open'));
+
+  // ── a11y: focus trap + Escape to close ──
+  const _prevFocus = document.activeElement;
+  const sheet = overlay.querySelector('.dt-picker-sheet');
+  function _focusables() {
+    return Array.from(sheet.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+      .filter(el => !el.disabled && el.offsetParent !== null);
+  }
+  function _onKeydown(e) {
+    if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+    if (e.key === 'Tab') {
+      const f = _focusables();
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }
+  overlay.addEventListener('keydown', _onKeydown);
+  setTimeout(() => { _focusables()[0]?.focus(); }, 50);
 
   function renderCal() {
     document.getElementById('dt-month-lbl').textContent = MONTHS_FULL[selMonth] + ' ' + selYear;
@@ -1953,9 +2144,8 @@ function _showDateTimePicker(onConfirm, initialISO) {
   document.getElementById('dt-next').addEventListener('click', () => { selMonth++; if(selMonth>11){selMonth=0;selYear++;} renderCal(); });
 
   function close() {
-    const sheet = overlay.querySelector('.dt-picker-sheet');
     sheet.classList.remove('open');
-    setTimeout(() => overlay.remove(), 280);
+    setTimeout(() => { overlay.remove(); _prevFocus?.focus?.(); }, 280);
   }
 
   document.getElementById('dt-close').addEventListener('click', close);
