@@ -2113,3 +2113,62 @@ textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
   font-size: 14px;
   line-height: 1;
 }
+
+/* ── label de razão de recomendação no card do feed ── */
+.card-reason-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: rgba(255,255,255,.18);
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+  backdrop-filter: blur(4px);
+}
+
+/* ── feed-sport-chips container ── */
+.feed-sport-chips {
+  display: none;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 10px;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.feed-sport-chips::-webkit-scrollbar { display: none; }
+
+/* ── feed empty state ── */
+.feed-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-3);
+  font-size: 14px;
+}
+.feed-empty p { margin: 0 0 8px; font-size: 15px; line-height: 1.5; }
+
+/* ── past result cards ── */
+.result-card.past-event {
+  opacity: .7;
+  filter: grayscale(.35);
+}
+
+/* ── page exit animation ── */
+.page-exit {
+  opacity: 0 !important;
+  transform: translateY(6px) !important;
+  transition: opacity .18s ease, transform .18s ease !important;
+}
+
+/* ── nav item active fill ── */
+.nav-item.active svg[fill="none"] {
+  stroke-width: 2.5;
+}
+
+/* ── dark mode: reason pill ── */
+@media (prefers-color-scheme: dark) {
+  .card-reason-pill { background: rgba(0,0,0,.25); border-color: rgba(255,255,255,.2); }
+}

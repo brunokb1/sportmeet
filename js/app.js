@@ -10,7 +10,19 @@ function setHTML(id, val) { const el = document.getElementById(id); if (el) el.i
 function show(id)  { const el = document.getElementById(id); if (el) el.style.display = ''; }
 function hide(id)  { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
 
+/* ── Toast com fila (evita sobreposição) ── */
+const _toastQueue = [];
+let   _toastRunning = false;
+
 function showToast(msg, dur) {
+  _toastQueue.push({ msg, dur: dur || 2800 });
+  if (!_toastRunning) _runNextToast();
+}
+function _runNextToast() {
+  if (!_toastQueue.length) { _toastRunning = false; return; }
+  _toastRunning = true;
+  const { msg, dur } = _toastQueue.shift();
+
   let t = document.getElementById('sm-toast');
   if (!t) {
     t = document.createElement('div');
@@ -31,7 +43,10 @@ function showToast(msg, dur) {
   t.textContent = msg;
   t.style.opacity = '1';
   clearTimeout(t._t);
-  t._t = setTimeout(() => { t.style.opacity = '0'; }, dur || 2800);
+  t._t = setTimeout(() => {
+    t.style.opacity = '0';
+    setTimeout(_runNextToast, 280);
+  }, dur);
 }
 
 function esc(s) {
@@ -77,6 +92,20 @@ function _gradientColor(g) {
   return m ? m[0] : '#22C55E';
 }
 
+/* ── datas relativas ── */
+function _relativeDate(datetime) {
+  const d   = new Date(datetime.replace(' ','T'));
+  const now = new Date();
+  const diff = d - now;
+  if (diff < 0) return Store.fmt.full(datetime); // past — show full
+  const days = Math.floor(diff / 86400000);
+  const hh = pad(d.getHours()), mm = pad(d.getMinutes());
+  if (days === 0) return 'Hoje às ' + hh + ':' + mm;
+  if (days === 1) return 'Amanhã às ' + hh + ':' + mm;
+  if (days < 7)  return DOW_LABELS[d.getDay()][0] + DOW_LABELS[d.getDay()].slice(1).toLowerCase() + ' às ' + hh + ':' + mm;
+  return Store.fmt.full(datetime);
+}
+
 /* ── page entrance animation ── */
 function _animatePageIn() {
   const sc = document.querySelector('.screen-content, .home-screen');
@@ -97,7 +126,38 @@ function _animatePageIn() {
 document.addEventListener('DOMContentLoaded', () => {
   Store.load();
   _animatePageIn();
+
+  // ── nav active state ──
   const page = location.pathname.split('/').pop().replace('.html','') || 'index';
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const href = item.getAttribute('href') || '';
+    const isHome    = (page === 'index' || page === '') && href.includes('index');
+    const isBuscar  = page === 'buscar'  && href.includes('buscar');
+    const isAgenda  = page === 'agenda'  && href.includes('agenda');
+    const isPerfil  = page === 'perfil'  && href.includes('perfil');
+    if (isHome || isBuscar || isAgenda || isPerfil) {
+      item.classList.add('active');
+    } else if (!isHome && !isBuscar && !isAgenda && !isPerfil) {
+      item.classList.remove('active');
+    }
+  });
+
+  // ── page exit transitions ──
+  document.querySelectorAll('a[href]').forEach(a => {
+    a.addEventListener('click', e => {
+      const href = a.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('mailto')) return;
+      if (e.ctrlKey || e.metaKey || e.shiftKey) return; // allow open in new tab
+      const sc = document.querySelector('.screen-content, .home-screen');
+      if (!sc) return;
+      e.preventDefault();
+      sc.style.transition = 'opacity .18s ease, transform .18s ease';
+      sc.style.opacity    = '0';
+      sc.style.transform  = 'translateY(6px)';
+      setTimeout(() => { location.href = href; }, 190);
+    });
+  });
+
   const routes = {
     '':                        initHome,
     'index':                   initHome,
@@ -237,8 +297,9 @@ function _renderFeedSportChips() {
       chip.addEventListener('click', () => {
         active = chip.dataset.sport;
         Store.setPending('feedSportFilter', active);
+        _currentSportFilter = active === 'Todos' ? null : active.toLowerCase();
         renderChips();
-        _renderFeed(active === 'Todos' ? null : active.toLowerCase());
+        _renderFeed(_currentSportFilter);
       });
     });
   }
@@ -308,7 +369,7 @@ function _renderHomeWeek() {
   container.innerHTML = myEvs.slice(0,4).map(ev =>
     `<div class="mini-event">
       <span class="dot" style="background:${_gradientColor(ev.gradient)}"></span>
-      <span>${esc(ev.sport)} ${esc(ev.title)} · ${Store.fmt.dow(ev.datetime)}</span>
+      <span>${esc(ev.sport)} ${esc(ev.title)} · ${_relativeDate(ev.datetime)}</span>
     </div>`
   ).join('');
 }
@@ -316,7 +377,7 @@ function _renderHomeWeek() {
 function _updateBadge() {
   const badge = document.getElementById('badge-new');
   if (badge) {
-    const n = Store.getNewCount();
+    const n = Store.getRecommendedFeed(_currentSportFilter || null).length;
     if (n <= 0) { badge.style.display = 'none'; }
     else { badge.textContent = n + ' novo' + (n !== 1 ? 's' : ''); badge.style.display = ''; }
   }
@@ -330,12 +391,18 @@ function _updateBadge() {
   }
 }
 
+// Track current sport filter for badge updates
+let _currentSportFilter = null;
+
 /* ── feed / swipe ── */
 let _feedDragAbort = null;
 
 function _renderFeed(sportFilter) {
   const stack = document.getElementById('swipe-stack');
   if (!stack) return;
+
+  // Track current filter for badge updates
+  _currentSportFilter = sportFilter || null;
 
   // Cancel any drag listeners from a previous render to avoid leaks
   if (_feedDragAbort) { _feedDragAbort.abort(); _feedDragAbort = null; }
@@ -346,12 +413,24 @@ function _renderFeed(sportFilter) {
     if (el) { const n = el.cloneNode(true); el.parentNode.replaceChild(n, el); }
   });
 
-  let cards = Store.getFeedStack();
-  if (sportFilter) {
-    cards = cards.filter(c => (c.sportSlug || '').includes(sportFilter) || (c.sport || '').toLowerCase().includes(sportFilter));
-  }
+  // Use recommendation engine — already filters past events, full events, seen events
+  const allRec = Store.getRecommendedFeed(sportFilter);
+  const cards  = allRec.slice(0, 3);
+
   if (cards.length === 0) {
-    stack.innerHTML = '<div class="feed-empty"><p>Você viu todos os eventos por agora 👋<br><small>Volte mais tarde!</small></p></div>';
+    const total = Store.getRecommendedFeed(null).length;
+    if (total === 0) {
+      // Truly seen everything — offer to reset
+      stack.innerHTML = `
+        <div class="feed-empty">
+          <p>Você viu tudo por agora! 🎉</p>
+          <button onclick="Store.clearFeedHistory();_renderFeed()" class="btn btn-outline mt-16" style="font-size:13px">
+            ↻ Ver eventos novamente
+          </button>
+        </div>`;
+    } else {
+      stack.innerHTML = '<div class="feed-empty"><p>Nenhum evento para esse filtro 🔍<br><small>Tente outro esporte!</small></p></div>';
+    }
     return;
   }
 
@@ -365,6 +444,9 @@ function _renderFeed(sportFilter) {
     const spotsLeft = (card.maxParticipants || 0) - (card.participants ? card.participants.length : 0);
     const spotsPct  = card.maxParticipants ? spotsLeft / card.maxParticipants : 1;
     const spotsCls  = spotsPct < 0.1 ? 'low' : spotsPct < 0.3 ? 'medium' : 'high';
+    const reasonHtml = card._reason
+      ? `<div class="card-reason-pill">${esc(card._reason)}</div>`
+      : '';
     return `
       <div class="swipe-card ${cls}" ${frontId} style="user-select:none">
         ${i === 0 ? `
@@ -384,13 +466,14 @@ function _renderFeed(sportFilter) {
             <div class="card-title-w">${esc(card.title)}</div>
             <div class="card-meta-w">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              ${Store.fmt.full(card.datetime)} · ${esc(card.duration)}
+              ${_relativeDate(card.datetime)} · ${esc(card.duration)}
             </div>
             <div class="card-meta-w">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0116 0z"/><circle cx="12" cy="10" r="3"/></svg>
               ${esc(card.local)}
             </div>
             ${desc ? `<div class="card-desc-w">${desc}</div>` : ''}
+            ${reasonHtml}
             <div class="card-creator-w" onclick="event.stopPropagation();location.href='${profileHref}'">
               <div class="avatar av-xs ${card.creatorColor}">${esc(card.creatorInitial)}</div>
               <span>${esc(card.createdBy)}</span>
@@ -479,19 +562,23 @@ function _renderFeed(sportFilter) {
   }
 
   function _doAccept() {
+    // Capture the front card before dismiss animation removes it
+    const frontNow = Store.getRecommendedFeed(_currentSportFilter)[0] || null;
     _dismissCard('right', () => {
-      const card = Store.getCurrentFeedCard();
-      Store.acceptCurrentFeed();
-      if (card) Store.setPending('eventId', card.id);
+      if (frontNow) {
+        Store.markAccepted(frontNow);
+        Store.setPending('eventId', frontNow.id);
+      }
       _updateBadge();
       window.location.href = (_inPages() ? '' : 'pages/') + 'adicionado-agenda.html';
     });
   }
   function _doReject() {
+    const frontNow = Store.getRecommendedFeed(_currentSportFilter)[0] || null;
     _dismissCard('left', () => {
-      Store.rejectCurrentFeed();
+      if (frontNow) Store.markRejected(frontNow);
       _updateBadge();
-      _renderFeed();
+      _renderFeed(_currentSportFilter);
     });
   }
 
@@ -672,10 +759,10 @@ function _doLiveSearch() {
         <div class="result-card" onclick="location.href='detalhes.html?id=${ev.id}'">
           <div class="result-thumb" style="background:${ev.gradient};font-size:22px">${ev.sport}</div>
           <div class="result-info">
-            <div class="result-name">${esc(ev.title)}</div>
+            <div class="result-name">${_highlight(ev.title, q || activity)}</div>
             <div class="result-addr">${esc(ev.local)} · ${esc(ev.region)}</div>
             <div class="result-tags">
-              <span class="tag">${Store.fmt.short(ev.datetime)}</span>
+              <span class="tag">${_relativeDate(ev.datetime)}</span>
               <span class="tag">${esc(ev.ageRange)}</span>
               ${alreadyIn ? '<span class="tag" style="background:var(--green-light);color:var(--green-dark)">Na agenda ✓</span>' : ''}
             </div>
@@ -768,19 +855,22 @@ function initResults() {
 }
 
 function _renderResultsList(list, results) {
+  const q = Store.getPending('search') || '';
   list.innerHTML = results.map(ev => {
     const alreadyIn  = Store.isMyEvent(ev.id);
     const profHref   = _personHref(ev.createdBy);
+    const isPast     = new Date(ev.datetime) < new Date();
     return `
-      <div class="result-card" onclick="location.href='detalhes.html?id=${ev.id}'">
+      <div class="result-card${isPast?' past-event':''}" onclick="location.href='detalhes.html?id=${ev.id}'">
         <div class="result-thumb" style="background:${ev.gradient};font-size:22px">${ev.sport}</div>
         <div class="result-info">
-          <div class="result-name">${esc(ev.title)}</div>
+          <div class="result-name">${_highlight(ev.title, q)}</div>
           <div class="result-addr">${esc(ev.address)}</div>
           <div class="result-tags">
-            <span class="tag">${Store.fmt.short(ev.datetime)}</span>
+            <span class="tag">${isPast ? Store.fmt.full(ev.datetime) : _relativeDate(ev.datetime)}</span>
             <span class="tag">${esc(ev.ageRange)}</span>
             ${alreadyIn ? '<span class="tag" style="background:var(--green-light);color:var(--green-dark)">Na agenda ✓</span>' : ''}
+            ${isPast ? '<span class="tag" style="background:var(--border);color:var(--text-3)">Encerrado</span>' : ''}
           </div>
           <div class="result-creator">
             <a href="${profHref}" class="creator-link" onclick="event.stopPropagation()">
@@ -1191,28 +1281,53 @@ function initInvite() {
    EVENTO CRIADO
    ============================================================ */
 function initCreated() {
-  const data = Store.getPending('createData');
-  if (!data) return;
-  const ev = Store.createEvent(data);
-  Store.clearPending('createData');
-  Store.setPending('eventId', ev.id);
+  // Anti-duplicate: check if we already created this event in this flow
+  let ev;
+  if (Store.getPending('eventCreated')) {
+    // Event was already created — just display it
+    const existingId = Store.getPending('lastCreatedId');
+    ev = existingId ? Store.getEventById(existingId) : null;
+    if (!ev) { window.location.href = 'criar-evento.html'; return; }
+  } else {
+    const data = Store.getPending('createData');
+    if (!data) { window.location.href = 'criar-evento.html'; return; }
+    ev = Store.createEvent(data);
+    Store.clearPending('createData');
+    Store.setPending('lastCreatedId', ev.id);
+    Store.setPending('eventCreated', true);
+    Store.setPending('eventId', ev.id);
+  }
 
-  const count = (Store.getPending('selectedFriends') || [0,1,2]).length;
+  const count = (Store.getPending('selectedFriends') || []).length;
   const timeEl = document.getElementById('ev-created-time');
   const locEl  = document.getElementById('ev-created-local');
   const frdEl  = document.getElementById('ev-created-friends');
-  if (timeEl) timeEl.innerHTML = '<b>' + Store.fmt.short(ev.datetime) + '</b> — ' + ev.title;
+  if (timeEl) timeEl.innerHTML = '<b>' + _relativeDate(ev.datetime) + '</b> — ' + esc(ev.title);
   if (locEl)  locEl.textContent = ev.local;
-  if (frdEl)  frdEl.textContent = count + (count !== 1 ? ' amigos convidados' : ' amigo convidado');
+  if (frdEl)  frdEl.textContent = count > 0
+    ? count + (count !== 1 ? ' amigos convidados' : ' amigo convidado')
+    : 'Nenhum amigo convidado';
 
   const detBtn = document.getElementById('btn-see-details');
   if (detBtn) detBtn.href = 'detalhes.html?id=' + ev.id;
 
+  // Clear pending flags when user goes back to home
+  document.querySelectorAll('a[href*="index.html"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      Store.clearPending('eventCreated');
+      Store.clearPending('lastCreatedId');
+    });
+  });
+
   document.getElementById('btn-share')?.addEventListener('click', () => {
     const url = location.origin + location.pathname.replace(/[^/]*$/, '') + 'detalhes.html?id=' + ev.id;
-    navigator.clipboard?.writeText(url)
-      .then(() => showToast('Link copiado! 🔗'))
-      .catch(() => showToast('Compartilhe o link do evento! 🔗'));
+    if (navigator.share) {
+      navigator.share({ title: ev.title, text: 'Participe do meu evento no SportMeet!', url });
+    } else {
+      navigator.clipboard?.writeText(url)
+        .then(() => showToast('Link copiado! 🔗'))
+        .catch(() => showToast('Compartilhe o link do evento! 🔗'));
+    }
   });
 }
 
@@ -1240,18 +1355,21 @@ function _renderAgendaEvents() {
   }
 
   const sorted = [...evs].sort((a,b) => a.datetime.localeCompare(b.datetime));
-  list.innerHTML = sorted.map(ev => `
-    <a href="detalhes.html?id=${ev.id}" class="event-row" data-day="${Store.fmt.day(ev.datetime)}" style="text-decoration:none;color:inherit">
+  list.innerHTML = sorted.map(ev => {
+    const isPast = new Date(ev.datetime) < new Date();
+    return `
+    <a href="detalhes.html?id=${ev.id}" class="event-row${isPast?' past-event':''}" data-day="${Store.fmt.day(ev.datetime)}" style="text-decoration:none;color:inherit${isPast?';opacity:.7;filter:grayscale(.4)':''}">
       <div class="event-date">
         <div class="event-date-day">${Store.fmt.dow(ev.datetime)}</div>
         <div class="event-date-num">${Store.fmt.day(ev.datetime)}</div>
       </div>
       <div class="event-row-info">
-        <div class="event-row-name">${ev.sport} ${ev.title}</div>
-        <div class="event-row-sub">${Store.fmt.time(ev.datetime)} · ${ev.local}</div>
+        <div class="event-row-name">${ev.sport} ${esc(ev.title)}</div>
+        <div class="event-row-sub">${_relativeDate(ev.datetime)} · ${esc(ev.local)}</div>
       </div>
       <div class="event-row-arrow">›</div>
-    </a>`).join('');
+    </a>`;
+  }).join('');
 }
 
 /* ── mini-calendário ── */
@@ -1370,10 +1488,11 @@ function initProfile() {
   const av = document.getElementById('prof-avatar');
   if (av) { av.className = 'profile-avatar'; av.classList.add(u.colorClass); }
 
-  /* stats — clickable */
-  setText('stat-participated', u.stats.participated);
-  setText('stat-created',      u.stats.created);
-  setText('stat-friends',      u.stats.friends);
+  /* stats — computed from real data */
+  const s = Store.getStats();
+  setText('stat-participated', s.participated);
+  setText('stat-created',      s.created);
+  setText('stat-friends',      s.friends);
 
   // Make stat items navigate
   document.getElementById('stat-link-participated')?.setAttribute('href', 'lista.html?tipo=participados');
@@ -1775,18 +1894,33 @@ function initNotifications() {
       } else {
         inviteList.innerHTML = inv.map(n => {
           const ph = _personHref(n.from);
-          return `
-          <div class="notif-item" id="notif-${n.id}">
-            <a href="${ph}" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;flex:1;min-width:0">
-              <div class="avatar av-md ${n.fromColor}">${esc(n.fromInitial)}</div>
-              <div class="notif-info-wrap">
-                <div class="notif-name">${esc(n.from)}</div>
-                <div class="notif-sport">${esc(n.sport)} · ${Store.fmt.short(n.datetime)} · ${esc(n.local)}</div>
+          const ev = n.eventId ? Store.getEventById(n.eventId) : null;
+          const base = _inPages() ? '' : 'pages/';
+          const evBanner = ev ? `
+            <a href="${base}detalhes.html?id=${ev.id}" style="display:block;text-decoration:none;margin-bottom:10px;border-radius:10px;overflow:hidden" onclick="event.stopPropagation()">
+              <div style="background:${ev.gradient};padding:10px 12px;display:flex;gap:10px;align-items:center">
+                <span style="font-size:24px">${ev.sport}</span>
+                <div>
+                  <div style="font-weight:700;color:#fff;font-size:13px">${esc(ev.title)}</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.85)">${_relativeDate(ev.datetime)} · ${esc(ev.local)}</div>
+                </div>
               </div>
-            </a>
+            </a>` : '';
+          return `
+          <div class="notif-item" id="notif-${n.id}" style="flex-direction:column;align-items:stretch">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+              <a href="${ph}" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;flex:1;min-width:0">
+                <div class="avatar av-md ${n.fromColor}">${esc(n.fromInitial)}</div>
+                <div class="notif-info-wrap">
+                  <div class="notif-name">${esc(n.from)} te convidou</div>
+                  <div class="notif-sport">${esc(n.sport || n.label || '')}</div>
+                </div>
+              </a>
+            </div>
+            ${evBanner}
             <div class="notif-actions">
-              <button class="notif-accept" data-id="${n.id}">Aceitar</button>
-              <button class="notif-reject" data-id="${n.id}">Recusar</button>
+              <button class="notif-accept" data-id="${n.id}">✓ Aceitar</button>
+              <button class="notif-reject" data-id="${n.id}">✕ Recusar</button>
             </div>
           </div>`;
         }).join('');
@@ -2176,13 +2310,22 @@ function _buildAgeRangeUI(container, hiddenInput, onChangeCb) {
   updateHidden();
 }
 
-/** Highlights the matching portion of text */
+/** Highlights the matching portion of text (for autocomplete dropdowns) */
 function _hlMatch(text, query) {
   if (!query) return text;
   const q   = query.trim().toLowerCase();
   const idx = text.toLowerCase().indexOf(q);
   if (idx < 0) return text;
   return text.slice(0,idx) + '<mark style="background:var(--green-light);color:var(--green-dark);border-radius:2px">' + text.slice(idx, idx+q.length) + '</mark>' + text.slice(idx+q.length);
+}
+
+/** Highlights ALL occurrences of query term in text (for search results) */
+function _highlight(text, q) {
+  if (!q || !text) return esc(text || '');
+  const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re   = new RegExp('(' + safe + ')', 'gi');
+  return esc(text).replace(new RegExp('(' + safe.replace(/[&<>"']/g,'') + ')', 'gi'),
+    m => '<mark style="background:rgba(34,197,94,.25);color:var(--green-dark);border-radius:2px">' + m + '</mark>');
 }
 
 /**

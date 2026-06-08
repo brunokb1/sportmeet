@@ -1,7 +1,7 @@
 /* ============================================================
    SportMeet — Service Worker (PWA offline cache)
    ============================================================ */
-const CACHE = 'sportmeet-v6';
+const CACHE = 'sportmeet-v7';
 const ASSETS = [
   './',
   './index.html',
