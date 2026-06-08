@@ -2022,9 +2022,11 @@ textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
 }
 .swipe-card.entering { animation: card-slide-up .4s ease both; }
 
-/* ── nav icon active fill ── */
-.nav-item svg { fill: none; }
-.nav-item.active svg[viewBox="0 0 24 24"][stroke] { fill: rgba(34,197,94,.18); }
+/* ── nav icon active fill ──
+   Só zera fill em SVGs com stroke (ícones de contorno).
+   O ícone Home usa fill="currentColor" sem stroke — NÃO pode ter fill:none. */
+.nav-item svg[stroke] { fill: none; }
+.nav-item.active svg[stroke] { fill: rgba(34,197,94,.18); }
 
 /* ── QR modal ── */
 .qr-modal-backdrop {

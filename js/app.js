@@ -56,9 +56,17 @@ function esc(s) {
 }
 
 function goBack() {
-  if (history.length > 1) { history.back(); return; }
-  const inPg = location.pathname.includes('/pages/');
-  window.location.href = inPg ? '../index.html' : 'index.html';
+  const sc = document.querySelector('.screen-content, .home-screen');
+  if (sc) {
+    sc.style.transition = 'opacity .18s ease, transform .18s ease';
+    sc.style.opacity    = '0';
+    sc.style.transform  = 'translateY(6px)';
+  }
+  setTimeout(() => {
+    if (history.length > 1) { history.back(); return; }
+    const inPg = location.pathname.includes('/pages/');
+    window.location.href = inPg ? '../index.html' : 'index.html';
+  }, 190);
 }
 
 function buildAvatarRow(participants, limit) {
@@ -122,31 +130,49 @@ function _animatePageIn() {
   });
 }
 
+/* ── bfcache: restaura visibilidade quando o usuário pressiona Voltar ──
+   O exit-transition seta opacity:0 antes de navegar. Se o browser
+   restaurar a página do bfcache, DOMContentLoaded NÃO dispara de novo,
+   mas pageshow dispara com e.persisted = true. Resetamos o estilo aqui. */
+window.addEventListener('pageshow', function(e) {
+  if (!e.persisted) return;
+  const sc = document.querySelector('.screen-content, .home-screen');
+  if (!sc) return;
+  sc.style.transition = 'none';
+  sc.style.opacity    = '';
+  sc.style.transform  = '';
+  requestAnimationFrame(() => {
+    sc.style.transition = 'opacity .22s ease, transform .22s ease';
+  });
+});
+
 /* ── roteador ── */
 document.addEventListener('DOMContentLoaded', () => {
   Store.load();
   _animatePageIn();
 
   // ── nav active state ──
+  // Só recalcula nas 4 abas principais; em sub-páginas o HTML define o active.
   const page = location.pathname.split('/').pop().replace('.html','') || 'index';
-  document.querySelectorAll('.nav-item').forEach(item => {
-    const href = item.getAttribute('href') || '';
-    const isHome    = (page === 'index' || page === '') && href.includes('index');
-    const isBuscar  = page === 'buscar'  && href.includes('buscar');
-    const isAgenda  = page === 'agenda'  && href.includes('agenda');
-    const isPerfil  = page === 'perfil'  && href.includes('perfil');
-    if (isHome || isBuscar || isAgenda || isPerfil) {
-      item.classList.add('active');
-    } else if (!isHome && !isBuscar && !isAgenda && !isPerfil) {
-      item.classList.remove('active');
-    }
-  });
+  const _mainPages = ['', 'index', 'buscar', 'agenda', 'perfil'];
+  if (_mainPages.includes(page)) {
+    document.querySelectorAll('.nav-item').forEach(item => {
+      const href = item.getAttribute('href') || '';
+      const isHome    = (page === 'index' || page === '') && href.includes('index');
+      const isBuscar  = page === 'buscar'  && href.includes('buscar');
+      const isAgenda  = page === 'agenda'  && href.includes('agenda');
+      const isPerfil  = page === 'perfil'  && href.includes('perfil');
+      if (isHome || isBuscar || isAgenda || isPerfil) item.classList.add('active');
+      else item.classList.remove('active');
+    });
+  }
 
   // ── page exit transitions ──
   document.querySelectorAll('a[href]').forEach(a => {
     a.addEventListener('click', e => {
       const href = a.getAttribute('href');
       if (!href || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('mailto')) return;
+      if (a.target === '_blank' || a.hasAttribute('download')) return; // não interceptar
       if (e.ctrlKey || e.metaKey || e.shiftKey) return; // allow open in new tab
       const sc = document.querySelector('.screen-content, .home-screen');
       if (!sc) return;
@@ -391,8 +417,9 @@ function _updateBadge() {
   }
 }
 
-// Track current sport filter for badge updates
+// Track current sport filter and front card (evita re-shuffle ao aceitar/rejeitar)
 let _currentSportFilter = null;
+let _currentFrontCard   = null;
 
 /* ── feed / swipe ── */
 let _feedDragAbort = null;
@@ -416,6 +443,10 @@ function _renderFeed(sportFilter) {
   // Use recommendation engine — already filters past events, full events, seen events
   const allRec = Store.getRecommendedFeed(sportFilter);
   const cards  = allRec.slice(0, 3);
+
+  // Guarda o card frontal — getRecommendedFeed embaralha aleatoriamente no bucket,
+  // então NÃO chamar de novo em _doAccept/_doReject (retornaria evento diferente).
+  _currentFrontCard = cards[0] || null;
 
   if (cards.length === 0) {
     const total = Store.getRecommendedFeed(null).length;
@@ -562,8 +593,9 @@ function _renderFeed(sportFilter) {
   }
 
   function _doAccept() {
-    // Capture the front card before dismiss animation removes it
-    const frontNow = Store.getRecommendedFeed(_currentSportFilter)[0] || null;
+    // Usa o card capturado no momento do render (sem re-shuffle)
+    const frontNow = _currentFrontCard;
+    _currentFrontCard = null;
     _dismissCard('right', () => {
       if (frontNow) {
         Store.markAccepted(frontNow);
@@ -574,7 +606,8 @@ function _renderFeed(sportFilter) {
     });
   }
   function _doReject() {
-    const frontNow = Store.getRecommendedFeed(_currentSportFilter)[0] || null;
+    const frontNow = _currentFrontCard;
+    _currentFrontCard = null;
     _dismissCard('left', () => {
       if (frontNow) Store.markRejected(frontNow);
       _updateBadge();
