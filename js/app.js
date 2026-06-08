@@ -139,8 +139,14 @@ function _personHref(name, explicitId) {
 }
 
 function initHome() {
-  // Sync header avatar with stored profile
+  // First-time user → onboarding
+  if (Store._isNewUser && !Store.getPending('onboardingDone')) {
+    const inPg = _inPages();
+    window.location.replace((inPg ? '' : 'pages/') + 'onboarding.html');
+    return;
+  }
   const u = Store.getUser();
+
   const headerAv = document.getElementById('header-avatar');
   if (headerAv) {
     headerAv.textContent = u.initials;
@@ -148,8 +154,67 @@ function initHome() {
   }
   _renderHomeWeek();
   _renderHomeInvites();
+  _renderFeedSportChips();
   _renderFeed();
+  _renderFriendsActive();
   _updateBadge();
+}
+
+function _renderFeedSportChips() {
+  const chipWrap = document.getElementById('feed-sport-chips');
+  if (!chipWrap) return;
+  const u = Store.getUser();
+  const prefs = u.preferences?.activities || u.sports || [];
+  if (prefs.length === 0) return;
+
+  const all = ['Todos', ...prefs.map(s => s.charAt(0).toUpperCase() + s.slice(1))];
+  let active = Store.getPending('feedSportFilter') || 'Todos';
+  chipWrap.style.display = 'flex';
+  chipWrap.style.gap = '8px';
+  chipWrap.style.overflowX = 'auto';
+  chipWrap.style.marginBottom = '10px';
+  chipWrap.style.webkitOverflowScrolling = 'touch';
+
+  function renderChips() {
+    chipWrap.innerHTML = all.map(s => {
+      const emoji = s === 'Todos' ? '⚡' : (SPORT_EMOJIS[s.toLowerCase()] || '🏅');
+      return `<div class="sport-filter-chip ${s === active ? 'active' : ''}" data-sport="${s}" role="button" tabindex="0">${emoji} ${s}</div>`;
+    }).join('');
+    chipWrap.querySelectorAll('.sport-filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        active = chip.dataset.sport;
+        Store.setPending('feedSportFilter', active);
+        renderChips();
+        _renderFeed(active === 'Todos' ? null : active.toLowerCase());
+      });
+    });
+  }
+  renderChips();
+}
+
+function _renderFriendsActive() {
+  const row = document.getElementById('friends-active-row');
+  if (!row) return;
+  const friends = Store.getFriends().slice(0, 8);
+  const now = new Date();
+  const items = friends.map(f => {
+    const evs = Store.getFriendEvents(f.id)
+      .filter(ev => new Date(ev.datetime) >= now)
+      .sort((a,b) => a.datetime.localeCompare(b.datetime));
+    return { f, nextEv: evs[0] || null };
+  });
+
+  if (items.length === 0) {
+    row.innerHTML = '<div style="color:var(--text-4);font-size:13px;padding:12px 0">Nenhum amigo com eventos próximos.</div>';
+    return;
+  }
+  const base = _inPages() ? '' : 'pages/';
+  row.innerHTML = items.map(({ f, nextEv }) => `
+    <a href="${base}amigo.html?id=${f.id}" class="friend-active-item" style="text-decoration:none">
+      <div class="avatar av-md ${f.color}">${esc(f.initial)}</div>
+      <div class="friend-active-name">${esc(f.name.split(' ')[0])}</div>
+      ${nextEv ? `<div class="friend-active-sport">${nextEv.sport}</div>` : ''}
+    </a>`).join('');
 }
 
 function _renderHomeInvites() {
@@ -215,7 +280,7 @@ function _updateBadge() {
 /* ── feed / swipe ── */
 let _feedDragAbort = null;
 
-function _renderFeed() {
+function _renderFeed(sportFilter) {
   const stack = document.getElementById('swipe-stack');
   if (!stack) return;
 
@@ -228,7 +293,10 @@ function _renderFeed() {
     if (el) { const n = el.cloneNode(true); el.parentNode.replaceChild(n, el); }
   });
 
-  const cards = Store.getFeedStack();
+  let cards = Store.getFeedStack();
+  if (sportFilter) {
+    cards = cards.filter(c => (c.sportSlug || '').includes(sportFilter) || (c.sport || '').toLowerCase().includes(sportFilter));
+  }
   if (cards.length === 0) {
     stack.innerHTML = '<div class="feed-empty"><p>Você viu todos os eventos por agora 👋<br><small>Volte mais tarde!</small></p></div>';
     return;

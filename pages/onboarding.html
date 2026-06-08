@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#22C55E">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <title>SportMeet — Bem-vindo</title>
+  <link rel="stylesheet" href="../css/style.css?v=6">
+  <style>
+    .ob-slider { overflow: hidden; }
+    .ob-slides { display: flex; transition: transform .35s cubic-bezier(.4,0,.2,1); }
+    .ob-slide {
+      flex: 0 0 100%; min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 40px 24px 32px; text-align: center;
+    }
+    .ob-logo { font-size: 52px; margin-bottom: 8px; animation: pop-in .6s cubic-bezier(.17,.67,.29,1.6) both; }
+    @keyframes pop-in { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .ob-title { font-size: 26px; font-weight: 800; color: var(--text-1); margin-bottom: 10px; line-height: 1.15; }
+    .ob-sub   { font-size: 15px; color: var(--text-3); margin-bottom: 32px; max-width: 280px; line-height: 1.55; }
+    .ob-sport-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; width: 100%; max-width: 320px; margin-bottom: 24px; }
+    .ob-sport-item {
+      padding: 12px 8px; border-radius: 14px; border: 2px solid var(--border);
+      background: var(--surface); cursor: pointer; transition: all .15s;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; color: var(--text-3); user-select: none;
+    }
+    .ob-sport-item .ob-sport-emoji { font-size: 26px; }
+    .ob-sport-item.sel { border-color: var(--green); background: var(--green-light); color: var(--green-dark); }
+    .ob-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+    .ob-dot { width: 8px; height: 8px; border-radius: 4px; background: var(--border); transition: all .2s; }
+    .ob-dot.active { width: 22px; background: var(--green); }
+    .ob-actions { display: flex; gap: 10px; width: 100%; max-width: 320px; }
+    .ob-skip { background: none; border: none; color: var(--text-4); font-size: 14px; cursor: pointer; padding: 12px; text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <div class="ob-slider">
+    <div class="ob-slides" id="ob-slides">
+
+      <!-- Slide 1 — Boas-vindas -->
+      <div class="ob-slide" style="background: linear-gradient(180deg,#F0FDF4 0%,#fff 70%)">
+        <div class="ob-logo">⚡</div>
+        <div class="ob-title">Bem-vindo ao<br><span style="color:var(--green)">SportMeet!</span></div>
+        <div class="ob-sub">Conecte-se com pessoas da sua região e participe de eventos esportivos incríveis.</div>
+        <div class="ob-dots" id="ob-dots"></div>
+        <div class="ob-actions">
+          <button class="btn btn-green" id="ob-next-1" style="flex:1">COMEÇAR →</button>
+        </div>
+        <button class="ob-skip" onclick="_obSkip()">Pular</button>
+      </div>
+
+      <!-- Slide 2 — Esportes preferidos -->
+      <div class="ob-slide">
+        <div style="font-size:40px;margin-bottom:8px">🏅</div>
+        <div class="ob-title">Quais esportes você curte?</div>
+        <div class="ob-sub">Selecione ao menos um para personalizar seu feed.</div>
+        <div class="ob-sport-grid" id="ob-sport-grid"></div>
+        <div class="ob-dots" id="ob-dots-2"></div>
+        <div class="ob-actions">
+          <button class="btn btn-outline" id="ob-back-2" style="flex:0 0 44px">‹</button>
+          <button class="btn btn-green" id="ob-next-2" style="flex:1">PRÓXIMO →</button>
+        </div>
+        <button class="ob-skip" onclick="_obSkip()">Pular</button>
+      </div>
+
+      <!-- Slide 3 — Bairro -->
+      <div class="ob-slide">
+        <div style="font-size:40px;margin-bottom:8px">📍</div>
+        <div class="ob-title">Onde você mora?</div>
+        <div class="ob-sub">Informe seu bairro para ver eventos perto de você.</div>
+        <div style="width:100%;max-width:320px;margin-bottom:24px;position:relative">
+          <input class="form-input" id="ob-bairro" type="text"
+                 placeholder="Ex: Brooklin, Pinheiros..."
+                 autocomplete="off" style="font-size:16px">
+        </div>
+        <div class="ob-dots" id="ob-dots-3"></div>
+        <div class="ob-actions">
+          <button class="btn btn-outline" id="ob-back-3" style="flex:0 0 44px">‹</button>
+          <button class="btn btn-green" id="ob-finish" style="flex:1">ENTRAR →</button>
+        </div>
+        <button class="ob-skip" onclick="_obSkip()">Pular</button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+<script src="../js/store.js?v=6"></script>
+<script src="../js/app.js?v=6"></script>
+<script>
+  const SLIDE_COUNT = 3;
+  let cur = 0;
+
+  function _obGoTo(n) {
+    cur = Math.max(0, Math.min(SLIDE_COUNT - 1, n));
+    document.getElementById('ob-slides').style.transform = `translateX(-${cur * 100}%)`;
+    // sync dots for all slide dot containers
+    ['ob-dots','ob-dots-2','ob-dots-3'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = Array.from({length:SLIDE_COUNT},(_,i) =>
+        `<div class="ob-dot ${i===cur?'active':''}"></div>`).join('');
+    });
+  }
+
+  function _obSkip() { _obSave(); window.location.href = '../index.html'; }
+
+  function _obSave() {
+    const selSports = Array.from(document.querySelectorAll('.ob-sport-item.sel')).map(el => el.dataset.sport);
+    const bairro    = document.getElementById('ob-bairro')?.value.trim() || '';
+    if (selSports.length) Store.updatePreferences({ activities: selSports, bairro });
+    else if (bairro)      Store.updatePreferences({ bairro });
+    Store.setPending('onboardingDone', true);
+  }
+
+  // Build sport grid
+  function _obBuildSports() {
+    const grid = document.getElementById('ob-sport-grid');
+    if (!grid) return;
+    const acts = Store.getActivities().slice(0, 9);
+    grid.innerHTML = acts.map(a =>
+      `<div class="ob-sport-item" data-sport="${a.name}" role="button" tabindex="0">
+        <span class="ob-sport-emoji">${a.emoji}</span>
+        <span>${a.name.charAt(0).toUpperCase()+a.name.slice(1)}</span>
+      </div>`).join('');
+    grid.querySelectorAll('.ob-sport-item').forEach(item => {
+      item.addEventListener('click', () => item.classList.toggle('sel'));
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    Store.load();
+    // If already onboarded, skip to app
+    if (Store.getPending('onboardingDone') || Store.getUser().preferences?.activities?.length > 0) {
+      window.location.replace('../index.html'); return;
+    }
+    _obGoTo(0);
+    _obBuildSports();
+
+    // Bairro autocomplete
+    const bInput = document.getElementById('ob-bairro');
+    if (bInput) _attachBairroAutocomplete(bInput);
+
+    document.getElementById('ob-next-1').addEventListener('click', () => _obGoTo(1));
+    document.getElementById('ob-back-2').addEventListener('click', () => _obGoTo(0));
+    document.getElementById('ob-next-2').addEventListener('click', () => {
+      const sel = document.querySelectorAll('.ob-sport-item.sel').length;
+      if (sel === 0) { showToast('Selecione ao menos um esporte 🏅'); return; }
+      _obGoTo(2);
+    });
+    document.getElementById('ob-back-3').addEventListener('click', () => _obGoTo(1));
+    document.getElementById('ob-finish').addEventListener('click', () => { _obSave(); window.location.href = '../index.html'; });
+  });
+</script>
+</body>
+</html>

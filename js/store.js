@@ -237,12 +237,20 @@ const Store = {
   _s: null,
   _memoryOnly: false,   // true when localStorage is unavailable (incognito, quota, etc.)
 
+  _isNewUser: false,
+
   load() {
     try {
       const raw = localStorage.getItem(STORE_KEY);
       const parsed = raw ? JSON.parse(raw) : null;
-      this._s = (parsed && parsed.version === VERSION) ? parsed : _defaultState();
-    } catch(_) { this._s = _defaultState(); }
+      if (parsed && parsed.version === VERSION) {
+        this._s = parsed;
+        this._isNewUser = false;
+      } else {
+        this._s = _defaultState();
+        this._isNewUser = !raw; // truly new if nothing was stored
+      }
+    } catch(_) { this._s = _defaultState(); this._isNewUser = true; }
     this._save();
     return this;
   },
