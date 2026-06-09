@@ -947,21 +947,51 @@ function initDetails() {
   setText('det-title',     ev.title);
   setText('det-map-label', ev.address || ev.local);
 
-  // OpenStreetMap embed
+  // Mapa — placeholder instantâneo + geocode assíncrono via Nominatim → OSM embed
   const mapBox = document.querySelector('.map-box');
   if (mapBox) {
-    const query = encodeURIComponent((ev.address || ev.local) + ', São Paulo');
+    const gMapsQ   = encodeURIComponent((ev.address || ev.local) + ', São Paulo, Brasil');
+    const gMapsUrl = 'https://maps.google.com/?q=' + gMapsQ;
+    const addrText = esc(ev.address || ev.local);
+
+    Object.assign(mapBox.style, { position:'relative', overflow:'hidden', height:'160px', padding:'0' });
+
+    // Placeholder imediato — clicável — gradient do esporte como fundo
     mapBox.innerHTML = `
-      <iframe class="map-frame"
-        src="https://www.openstreetmap.org/export/embed.html?bbox=-46.7,-23.6,-46.5,-23.5&amp;layer=mapnik&amp;marker=-23.55,-46.63"
-        loading="lazy" title="Mapa do local do evento" aria-label="${esc(ev.address || ev.local)}"></iframe>
-      <div class="map-pin-wrap" style="position:absolute;bottom:8px;left:0;right:0;text-align:center;pointer-events:none">
-        <span style="background:rgba(255,255,255,.9);border-radius:16px;padding:2px 10px;font-size:12px;font-weight:600;color:var(--text-1)">📍 ${esc(ev.address || ev.local)}</span>
-      </div>`;
-    mapBox.style.position = 'relative';
-    mapBox.style.overflow = 'hidden';
-    mapBox.style.height = '160px';
-    mapBox.style.padding = '0';
+      <a id="map-placeholder" href="${gMapsUrl}" target="_blank" rel="noopener noreferrer"
+         style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+                height:160px;text-decoration:none;
+                background:linear-gradient(160deg,${_gradientColor(ev.gradient)}22,${_gradientColor(ev.gradient)}44);">
+        <div style="font-size:36px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15))">📍</div>
+        <div style="font-size:12px;font-weight:700;color:var(--text-1);text-align:center;padding:0 20px;line-height:1.35">${addrText}</div>
+        <div style="font-size:11px;color:var(--text-3);background:rgba(255,255,255,.85);
+                    border-radius:12px;padding:2px 12px;margin-top:2px">Toque para abrir no Maps ↗</div>
+      </a>`;
+
+    // Tenta geocodificar com Nominatim e substituir pelo OSM embed real
+    const nomiQ = encodeURIComponent((ev.address || ev.local) + ', São Paulo, Brasil');
+    fetch('https://nominatim.openstreetmap.org/search?q=' + nomiQ + '&format=json&limit=1&countrycodes=br', {
+      headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data || !data[0]) return;
+      const lat   = parseFloat(data[0].lat);
+      const lon   = parseFloat(data[0].lon);
+      const delta = 0.006; // ~650 m de raio
+      const bbox  = [lon-delta, lat-delta, lon+delta, lat+delta].join(',');
+      mapBox.innerHTML = `
+        <iframe class="map-frame"
+          src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}"
+          loading="lazy" title="Mapa do local do evento" aria-label="${addrText}"></iframe>
+        <a href="${gMapsUrl}" target="_blank" rel="noopener noreferrer"
+           style="position:absolute;bottom:8px;left:0;right:0;text-align:center;display:block;text-decoration:none">
+          <span style="background:rgba(255,255,255,.92);border-radius:16px;padding:3px 12px;
+                       font-size:12px;font-weight:600;color:var(--text-1);
+                       box-shadow:0 2px 6px rgba(0,0,0,.12)">📍 ${addrText} ↗</span>
+        </a>`;
+    })
+    .catch(() => { /* mantém o placeholder — sem crash */ });
   }
 
   const bannerWrap = document.getElementById('det-banner');
