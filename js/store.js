@@ -211,8 +211,8 @@ const SEARCH_POOL = [
 function _allPools() { return [...FEED_POOL, ...SEARCH_POOL, ...Object.values(FRIEND_EVENTS).flat()]; }
 
 /* ── estado padrão ─────────────────────────────────────────── */
-const STORE_KEY = 'sm_store_v7';
-const VERSION   = 7;
+const STORE_KEY = 'sm_store_v8';
+const VERSION   = 8;
 
 function _defaultState() {
   return {
@@ -228,44 +228,7 @@ function _defaultState() {
       initials:    'LF',
       colorClass:  'av-orange',
     },
-    myEvents: [
-      {
-        id:'ev-basquete', title:'Basquete no Brooklin', sport:'🏀', sportSlug:'basquete',
-        gradient:'linear-gradient(135deg,#F97316,#C2410C)',
-        ageRange:'18-35 anos', datetime:_fd(3,18), duration:'1h30',
-        local:'Quadra Brooklin', address:'Av. Morumbi, 123, Brooklin',
-        region:'Brooklin',
-        createdBy:'João', creatorInitial:'J', creatorColor:'av-blue',
-        participants:[{i:'LF',c:'av-orange',name:'Luiz Fernando'},{i:'J',c:'av-blue',name:'Joao'},{i:'R',c:'av-purple',name:'Rafael'},{i:'G',c:'av-green',name:'Gabriel'}],
-        maxParticipants:12, isOpen:true,
-        description:'Jogo amistoso 3×3. Todos os níveis são bem-vindos. Leve água e tênis.',
-        status:'active', source:'joined',
-      },
-      {
-        id:'ev-criado-1', title:'Corrida Matinal Brooklin', sport:'🏃', sportSlug:'corrida',
-        gradient:'linear-gradient(135deg,#22C55E,#059669)',
-        ageRange:'Todos', datetime:_fd(6,7), duration:'1h',
-        local:'Parque do Povo', address:'Av. Brigadeiro Faria Lima, s/n',
-        region:'Itaim Bibi',
-        createdBy:'Luiz Fernando', creatorInitial:'LF', creatorColor:'av-orange',
-        participants:[{i:'LF',c:'av-orange',name:'Luiz Fernando'},{i:'B',c:'av-purple',name:'Bruno'},{i:'A',c:'av-pink',name:'Alice'}],
-        maxParticipants:15, isOpen:true,
-        description:'Corrida leve de 5km pela manhã. Todos os ritmos bem-vindos!',
-        status:'active', source:'created',
-      },
-      {
-        id:'ev-criado-2', title:'Futebol Society Brooklin', sport:'⚽', sportSlug:'futebol',
-        gradient:'linear-gradient(135deg,#22C55E,#15803D)',
-        ageRange:'20-35 anos', datetime:_fd(12,19), duration:'1h30',
-        local:'Arena Society Brooklin', address:'Rua Álvaro Cruz, 300',
-        region:'Brooklin',
-        createdBy:'Luiz Fernando', creatorInitial:'LF', creatorColor:'av-orange',
-        participants:[{i:'LF',c:'av-orange',name:'Luiz Fernando'},{i:'L',c:'av-green',name:'Lucas'},{i:'C',c:'av-teal',name:'Carlos'}],
-        maxParticipants:14, isOpen:true,
-        description:'Pelada society semanal. Times de 7. Chuteira obrigatória.',
-        status:'active', source:'created',
-      },
-    ],
+    myEvents: [],
     feedIndex:        0,
     feedSeenIds:      [],
     rejectedSlugs:    {},

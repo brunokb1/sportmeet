@@ -288,6 +288,7 @@ function _initPullToRefresh() {
         indicator.textContent = '↓ Solte para atualizar';
         _renderHomeWeek();
         _renderHomeInvites();
+        _feedQueue = []; // pull-to-refresh → reconstruir fila
         _renderFeed();
         _renderFriendsActive();
         _updateBadge();
@@ -324,6 +325,7 @@ function _renderFeedSportChips() {
         active = chip.dataset.sport;
         Store.setPending('feedSportFilter', active);
         _currentSportFilter = active === 'Todos' ? null : active.toLowerCase();
+        _feedQueue = []; // filtro mudou → reconstruir fila
         renderChips();
         _renderFeed(_currentSportFilter);
       });
@@ -417,9 +419,17 @@ function _updateBadge() {
   }
 }
 
-// Track current sport filter and front card (evita re-shuffle ao aceitar/rejeitar)
+// Track current sport filter, front card e fila estável do feed
 let _currentSportFilter = null;
 let _currentFrontCard   = null;
+let _feedQueue          = []; // fila ordered — reconstruída só quando necessário
+
+// Helper: limpar histórico + fila e rerenderizar (usado no botão "Ver novamente")
+function _resetFeed() {
+  Store.clearFeedHistory();
+  _feedQueue = [];
+  _renderFeed(_currentSportFilter);
+}
 
 /* ── feed / swipe ── */
 let _feedDragAbort = null;
@@ -440,12 +450,13 @@ function _renderFeed(sportFilter) {
     if (el) { const n = el.cloneNode(true); el.parentNode.replaceChild(n, el); }
   });
 
-  // Use recommendation engine — already filters past events, full events, seen events
-  const allRec = Store.getRecommendedFeed(sportFilter);
-  const cards  = allRec.slice(0, 3);
-
-  // Guarda o card frontal — getRecommendedFeed embaralha aleatoriamente no bucket,
-  // então NÃO chamar de novo em _doAccept/_doReject (retornaria evento diferente).
+  // Fila estável: evita re-shuffle visual entre swipes.
+  // getRecommendedFeed() só é chamado quando a fila está vazia
+  // (primeira carga, troca de filtro ou reset explícito).
+  if (_feedQueue.length === 0) {
+    _feedQueue = Store.getRecommendedFeed(sportFilter || null);
+  }
+  const cards = _feedQueue.slice(0, 3);
   _currentFrontCard = cards[0] || null;
 
   if (cards.length === 0) {
@@ -455,7 +466,7 @@ function _renderFeed(sportFilter) {
       stack.innerHTML = `
         <div class="feed-empty">
           <p>Você viu tudo por agora! 🎉</p>
-          <button onclick="Store.clearFeedHistory();_renderFeed()" class="btn btn-outline mt-16" style="font-size:13px">
+          <button onclick="_resetFeed()" class="btn btn-outline mt-16" style="font-size:13px">
             ↻ Ver eventos novamente
           </button>
         </div>`;
@@ -609,9 +620,12 @@ function _renderFeed(sportFilter) {
     const frontNow = _currentFrontCard;
     _currentFrontCard = null;
     _dismissCard('left', () => {
-      if (frontNow) Store.markRejected(frontNow);
+      if (frontNow) {
+        Store.markRejected(frontNow);
+        _feedQueue.shift(); // remove o card rejeitado da fila sem re-shuffle
+      }
       _updateBadge();
-      _renderFeed(_currentSportFilter);
+      _renderFeed(_currentSportFilter); // usa _feedQueue existente → sem mudança de cards
     });
   }
 
