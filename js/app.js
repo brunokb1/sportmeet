@@ -1381,41 +1381,98 @@ function initCreated() {
 /* ============================================================
    AGENDA
    ============================================================ */
+/* ── agenda: tab state ── */
+let _agendaTab = 'proximos';
+
 function initAgenda() {
-  _renderCalendar();
+  _agendaTab = 'proximos';
+  _renderAgendaTabs();   // renders tabs + event list
+  _renderCalendar();     // calendar runs after so _highlightDay finds the rendered rows
+}
+
+function _renderAgendaTabs() {
+  const tabWrap = document.getElementById('agenda-tab-wrap');
+  if (!tabWrap) return;
+
+  const tabs = [
+    { id:'proximos', label:'Próximos' },
+    { id:'passados', label:'Passados' },
+    { id:'criados',  label:'Criados por mim' },
+  ];
+  tabWrap.innerHTML = `
+    <div class="page-tabs">
+      ${tabs.map(t => `<button class="page-tab${t.id===_agendaTab?' active':''}" data-tab="${t.id}">${t.label}</button>`).join('')}
+    </div>`;
+  tabWrap.querySelectorAll('.page-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.tab === _agendaTab) return;
+      _agendaTab = btn.dataset.tab;
+      _renderAgendaTabs();
+    });
+  });
+
   _renderAgendaEvents();
 }
 
 function _renderAgendaEvents() {
   const list = document.getElementById('agenda-events-list');
   if (!list) return;
-  const evs = Store.getMyEvents();
+
+  const now  = new Date();
+  const all  = Store.getMyEvents();
+  let evs;
+  switch (_agendaTab) {
+    case 'passados':
+      evs = all.filter(e => new Date(e.datetime) < now)
+                .sort((a,b) => b.datetime.localeCompare(a.datetime)); break;
+    case 'criados':
+      evs = Store.getMyCreated().sort((a,b) => a.datetime.localeCompare(b.datetime)); break;
+    default:
+      evs = all.filter(e => new Date(e.datetime) >= now)
+                .sort((a,b) => a.datetime.localeCompare(b.datetime));
+  }
 
   if (evs.length === 0) {
+    const cfg = {
+      proximos:{ icon:'📅', title:'Nenhum evento próximo',  sub:'Explore o feed e adicione eventos à sua agenda!', cta:{href:'../index.html', label:'Explorar eventos'} },
+      passados:{ icon:'🏆', title:'Histórico vazio',         sub:'Seus eventos passados aparecerão aqui.' },
+      criados: { icon:'✏️', title:'Nenhum evento criado',   sub:'Que tal reunir a galera?', cta:{href:'criar-evento.html', label:'+ Criar evento'} },
+    };
+    const m = cfg[_agendaTab] || cfg.proximos;
     list.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📅</div>
-        <div class="empty-title">Nenhum evento na agenda</div>
-        <div class="empty-sub">Busque eventos ou crie o seu próprio!</div>
+      <div class="empty-state" style="margin-top:16px">
+        <div class="empty-icon">${m.icon}</div>
+        <div class="empty-title">${m.title}</div>
+        <div class="empty-sub">${m.sub}</div>
+        ${m.cta ? `<a href="${m.cta.href}" class="btn btn-green mt-16" style="font-size:13px;display:inline-block;padding:10px 24px">${m.cta.label}</a>` : ''}
       </div>`;
     return;
   }
 
-  const sorted = [...evs].sort((a,b) => a.datetime.localeCompare(b.datetime));
-  list.innerHTML = sorted.map(ev => {
-    const isPast = new Date(ev.datetime) < new Date();
+  list.innerHTML = evs.map(ev => {
+    const isPast = new Date(ev.datetime) < now;
+    const isMine = ev.source === 'created';
+    const partN  = (ev.participants || []).length;
+    const maxP   = ev.maxParticipants || 0;
     return `
-    <a href="detalhes.html?id=${ev.id}" class="event-row${isPast?' past-event':''}" data-day="${Store.fmt.day(ev.datetime)}" style="text-decoration:none;color:inherit${isPast?';opacity:.7;filter:grayscale(.4)':''}">
-      <div class="event-date">
-        <div class="event-date-day">${Store.fmt.dow(ev.datetime)}</div>
-        <div class="event-date-num">${Store.fmt.day(ev.datetime)}</div>
-      </div>
-      <div class="event-row-info">
-        <div class="event-row-name">${ev.sport} ${esc(ev.title)}</div>
-        <div class="event-row-sub">${_relativeDate(ev.datetime)} · ${esc(ev.local)}</div>
-      </div>
-      <div class="event-row-arrow">›</div>
-    </a>`;
+      <a href="detalhes.html?id=${ev.id}" class="event-row${isPast?' past-event':''}"
+         data-day="${Store.fmt.day(ev.datetime)}"
+         style="text-decoration:none;color:inherit${isPast?';opacity:.65;filter:grayscale(.35)':''}">
+        <div class="event-date">
+          <div class="event-date-day">${Store.fmt.dow(ev.datetime)}</div>
+          <div class="event-date-num">${Store.fmt.day(ev.datetime)}</div>
+        </div>
+        <div class="event-row-info">
+          <div class="event-row-name">${ev.sport} ${esc(ev.title)}</div>
+          <div class="event-row-sub">${_relativeDate(ev.datetime)} · ${esc(ev.local)}</div>
+          <div class="event-row-meta">
+            <span class="${isMine?'tag-mine':'tag-joined'}">${isMine?'Criado por você':'Confirmado ✓'}</span>
+            <span class="event-row-count">👥 ${partN}${maxP>0?'/'+maxP:''}</span>
+            ${isPast?'<span class="tag-past">Encerrado</span>':''}
+          </div>
+        </div>
+        <div class="event-row-arrow">›</div>
+      </a>`;
   }).join('');
 }
 
@@ -1728,8 +1785,7 @@ function confirmarSaida() {
    LISTA  (?tipo=amigos|participados|criados)
    ============================================================ */
 function initLista() {
-  const tipo = new URLSearchParams(location.search).get('tipo') || 'amigos';
-
+  const tipo     = new URLSearchParams(location.search).get('tipo') || 'amigos';
   const titleMap = { amigos:'Meus amigos', participados:'Eventos participados', criados:'Eventos criados' };
   const titleEl  = document.querySelector('.screen-title');
   if (titleEl) titleEl.textContent = titleMap[tipo] || 'Lista';
@@ -1737,58 +1793,189 @@ function initLista() {
   const container = document.getElementById('lista-content');
   if (!container) return;
 
-  if (tipo === 'amigos') {
-    const friends = Store.getFriends();
-    container.innerHTML = `
-      <div class="lista-header">${friends.length} amigo${friends.length !== 1 ? 's' : ''}</div>
-      ${friends.map(f => `
-        <a href="amigo.html?id=${f.id}" class="friend-item" style="text-decoration:none;color:inherit">
-          <div class="avatar av-md ${f.color}">${esc(f.initial)}</div>
-          <div class="friend-info">
-            <div class="friend-name">${esc(f.name)}</div>
-            <div class="friend-sport">${esc(f.sports.map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' · '))}</div>
-          </div>
-          <div style="color:var(--text-4);font-size:18px">›</div>
-        </a>`).join('')}`;
+  if      (tipo === 'amigos')       _renderListaAmigos(container);
+  else if (tipo === 'participados') _renderListaParticipados(container);
+  else if (tipo === 'criados')      _renderListaCriados(container);
+}
 
-  } else if (tipo === 'participados') {
-    const evs = Store.getMyEvents().sort((a,b) => a.datetime.localeCompare(b.datetime));
-    container.innerHTML = `
-      <div class="lista-header">${evs.length} evento${evs.length !== 1 ? 's' : ''}</div>
-      ${evs.length === 0
-        ? '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">Sem eventos</div></div>'
-        : evs.map(ev => `
-        <a href="detalhes.html?id=${ev.id}" class="event-row" style="text-decoration:none;color:inherit;margin-bottom:8px">
-          <div class="event-date">
-            <div class="event-date-day">${Store.fmt.dow(ev.datetime)}</div>
-            <div class="event-date-num">${Store.fmt.day(ev.datetime)}</div>
-          </div>
-          <div class="event-row-info">
-            <div class="event-row-name">${esc(ev.sport)} ${esc(ev.title)}</div>
-            <div class="event-row-sub">${Store.fmt.time(ev.datetime)} · ${esc(ev.local)}</div>
-          </div>
-          <div class="event-row-arrow">›</div>
-        </a>`).join('')}`;
+/* ── lista: Meus amigos ── */
+function _renderListaAmigos(container) {
+  const friends = Store.getFriends();
+  const pending = Store.getNotifications().filter(n => n.type === 'friend');
+  let html = '';
 
-  } else if (tipo === 'criados') {
-    const evs = Store.getMyCreated().sort((a,b) => a.datetime.localeCompare(b.datetime));
-    container.innerHTML = `
-      <div class="lista-header">${evs.length} evento${evs.length !== 1 ? 's' : ''} criado${evs.length !== 1 ? 's' : ''}</div>
-      ${evs.length === 0
-        ? '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">Nenhum evento criado</div><div class="empty-sub">Crie seu primeiro evento!</div></div>'
-        : evs.map(ev => `
-        <a href="detalhes.html?id=${ev.id}" class="event-row" style="text-decoration:none;color:inherit;margin-bottom:8px">
-          <div class="event-date">
-            <div class="event-date-day">${Store.fmt.dow(ev.datetime)}</div>
-            <div class="event-date-num">${Store.fmt.day(ev.datetime)}</div>
-          </div>
-          <div class="event-row-info">
-            <div class="event-row-name">${esc(ev.sport)} ${esc(ev.title)}</div>
-            <div class="event-row-sub">${Store.fmt.time(ev.datetime)} · ${esc(ev.local)}</div>
-          </div>
-          <div class="event-row-arrow">›</div>
-        </a>`).join('')}`;
+  if (pending.length > 0) {
+    html += `
+      <div class="section-label mb-8" style="display:flex;align-items:center;gap:6px">
+        Pedidos pendentes
+        <span style="background:var(--green);color:#fff;border-radius:99px;font-size:10px;font-weight:700;padding:1px 7px;line-height:1.6">${pending.length}</span>
+      </div>
+      <div class="info-section mb-16">
+        ${pending.map(n => `
+          <div class="pending-req-row" id="preq-${n.id}">
+            <div class="avatar av-md ${n.fromColor}">${esc(n.fromInitial)}</div>
+            <div class="pending-req-info">
+              <div class="pending-req-name">${esc(n.from)}</div>
+              <div class="pending-req-sub">${esc(n.sport || 'SportMeet')}</div>
+            </div>
+            <div class="pending-req-actions">
+              <button class="btn-accept-sm" data-id="${n.id}">Aceitar</button>
+              <button class="btn-decline-sm" data-id="${n.id}">Recusar</button>
+            </div>
+          </div>`).join('')}
+      </div>`;
   }
+
+  html += `<div class="lista-header">${friends.length} amigo${friends.length !== 1 ? 's' : ''}</div>`;
+
+  if (friends.length === 0) {
+    html += `
+      <div class="empty-state">
+        <div class="empty-icon">👥</div>
+        <div class="empty-title">Nenhum amigo ainda</div>
+        <div class="empty-sub">Explore eventos e conecte-se com outros participantes!</div>
+      </div>`;
+  } else {
+    html += friends.map(f => `
+      <a href="amigo.html?id=${f.id}" class="friend-item" style="text-decoration:none;color:inherit">
+        <div class="avatar av-md ${f.color}">${esc(f.initial)}</div>
+        <div class="friend-info">
+          <div class="friend-name">${esc(f.name)}</div>
+          <div class="friend-sport">${esc(f.sports.map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' · '))}</div>
+        </div>
+        <div style="color:var(--text-4);font-size:18px">›</div>
+      </a>`).join('');
+  }
+
+  container.innerHTML = html;
+
+  container.querySelectorAll('.btn-accept-sm').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const nid = btn.dataset.id;
+      const n   = Store.getNotifications().find(x => x.id === nid);
+      Store.acceptNotif(nid);
+      showToast((n?.from || 'Pedido') + ' agora é seu amigo! 🤝');
+      _renderListaAmigos(container);
+      _updateBadge();
+    });
+  });
+  container.querySelectorAll('.btn-decline-sm').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      Store.dismissNotif(btn.dataset.id);
+      showToast('Pedido recusado');
+      _renderListaAmigos(container);
+      _updateBadge();
+    });
+  });
+}
+
+/* ── lista: Eventos participados ── */
+function _renderListaParticipados(container) {
+  // Only show events the user JOINED (not created)
+  const all    = Store.getMyEvents();
+  const joined = all.filter(e => e.source !== 'created')
+                    .sort((a,b) => a.datetime.localeCompare(b.datetime));
+  const now = new Date();
+
+  // Build sport filter from actual events
+  const slugs  = [...new Set(joined.map(e => e.sportSlug).filter(Boolean))];
+  let activeSlug = null;
+
+  function render() {
+    const filtered = activeSlug ? joined.filter(e => e.sportSlug === activeSlug) : joined;
+    const chipsHtml = slugs.length > 1 ? `
+      <div class="sport-chips-row">
+        <div class="sport-filter-chip${!activeSlug?' active':''}" data-s="">⚡ Todos</div>
+        ${slugs.map(s => {
+          const em = SPORT_EMOJIS[s] || '🏅';
+          return `<div class="sport-filter-chip${activeSlug===s?' active':''}" data-s="${s}">${em} ${s.charAt(0).toUpperCase()+s.slice(1)}</div>`;
+        }).join('')}
+      </div>` : '';
+
+    container.innerHTML = chipsHtml + `
+      <div class="lista-header">${filtered.length} evento${filtered.length!==1?'s':''} participado${filtered.length!==1?'s':''}</div>
+      ${filtered.length === 0
+        ? `<div class="empty-state">
+             <div class="empty-icon">📅</div>
+             <div class="empty-title">${activeSlug ? 'Nenhum evento de '+activeSlug : 'Nenhum evento ainda'}</div>
+             <div class="empty-sub">Explore o feed e adicione eventos à sua agenda!</div>
+             <a href="../index.html" class="btn btn-green mt-16" style="font-size:13px;display:inline-block;padding:10px 24px">Explorar eventos</a>
+           </div>`
+        : filtered.map(ev => {
+            const isPast  = new Date(ev.datetime) < now;
+            const partN   = (ev.participants || []).length;
+            const maxP    = ev.maxParticipants || 0;
+            return `
+              <a href="detalhes.html?id=${ev.id}" class="event-row" style="text-decoration:none;color:inherit;margin-bottom:8px${isPast?';opacity:.65;filter:grayscale(.35)':''}">
+                <div class="event-date">
+                  <div class="event-date-day">${Store.fmt.dow(ev.datetime)}</div>
+                  <div class="event-date-num">${Store.fmt.day(ev.datetime)}</div>
+                </div>
+                <div class="event-row-info">
+                  <div class="event-row-name">${ev.sport} ${esc(ev.title)}</div>
+                  <div class="event-row-sub">${Store.fmt.time(ev.datetime)} · ${esc(ev.local)}</div>
+                  <div class="event-row-meta">
+                    <span class="${isPast?'tag-past':'tag-joined'}">${isPast?'Encerrado':'Confirmado ✓'}</span>
+                    <span class="event-row-count">👥 ${partN}${maxP>0?'/'+maxP:''}</span>
+                  </div>
+                </div>
+                <div class="event-row-arrow">›</div>
+              </a>`;
+          }).join('')}`;
+
+    container.querySelectorAll('.sport-filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => { activeSlug = chip.dataset.s || null; render(); });
+    });
+  }
+  render();
+}
+
+/* ── lista: Eventos criados ── */
+function _renderListaCriados(container) {
+  const evs = Store.getMyCreated().sort((a,b) => a.datetime.localeCompare(b.datetime));
+  const now = new Date();
+
+  if (evs.length === 0) {
+    container.innerHTML = `
+      <div class="lista-header">0 eventos criados</div>
+      <div class="empty-state">
+        <div class="empty-icon">✏️</div>
+        <div class="empty-title">Nenhum evento criado</div>
+        <div class="empty-sub">Reúna a galera! Crie seu primeiro evento esportivo.</div>
+        <a href="criar-evento.html" class="btn btn-green mt-16" style="font-size:13px;display:inline-block;padding:10px 24px">+ Criar evento</a>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="lista-header">${evs.length} evento${evs.length!==1?'s':''} criado${evs.length!==1?'s':''}</div>
+    ${evs.map(ev => {
+      const isPast     = new Date(ev.datetime) < now;
+      const partN      = (ev.participants || []).length;
+      const maxP       = ev.maxParticipants || 0;
+      const spotsLeft  = maxP - partN;
+      const isFull     = maxP > 0 && spotsLeft <= 0;
+      const spotsLabel = isFull ? '· Lotado!' : spotsLeft === 1 ? '· 1 vaga' : spotsLeft > 1 ? '· '+spotsLeft+' vagas' : '';
+      return `
+        <a href="detalhes.html?id=${ev.id}" class="event-row" style="text-decoration:none;color:inherit;margin-bottom:8px${isPast?';opacity:.65;filter:grayscale(.35)':''}">
+          <div class="event-date">
+            <div class="event-date-day">${Store.fmt.dow(ev.datetime)}</div>
+            <div class="event-date-num">${Store.fmt.day(ev.datetime)}</div>
+          </div>
+          <div class="event-row-info">
+            <div class="event-row-name">${ev.sport} ${esc(ev.title)}</div>
+            <div class="event-row-sub">${Store.fmt.time(ev.datetime)} · ${esc(ev.local)}</div>
+            <div class="event-row-meta">
+              <span class="tag-mine">Criado por você</span>
+              <span class="event-row-count">👥 ${partN}${maxP>0?'/'+maxP:''} ${spotsLabel}</span>
+              ${isPast?'<span class="tag-past">Encerrado</span>':''}
+            </div>
+          </div>
+          <div class="event-row-arrow">›</div>
+        </a>`;
+    }).join('')}`;
 }
 
 /* ============================================================

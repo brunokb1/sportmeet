@@ -2174,3 +2174,106 @@ textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
 @media (prefers-color-scheme: dark) {
   .card-reason-pill { background: rgba(0,0,0,.25); border-color: rgba(255,255,255,.2); }
 }
+
+/* ============================================================
+   PAGE TABS  (agenda, lista)
+   ============================================================ */
+.page-tabs {
+  display: flex;
+  gap: 0;
+  margin: 0 -16px 16px;
+  padding: 0 16px;
+  border-bottom: 1.5px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.page-tabs::-webkit-scrollbar { display: none; }
+.page-tab {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s;
+}
+.page-tab.active {
+  color: var(--green);
+  border-bottom-color: var(--green);
+}
+.page-tab:hover:not(.active) { color: var(--text-1); }
+
+/* ── event row metadata (status tags) ── */
+.event-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.tag-mine {
+  font-size: 10px; font-weight: 700;
+  color: var(--green-dark); background: var(--green-light);
+  padding: 1px 7px; border-radius: 6px;
+}
+.tag-joined {
+  font-size: 10px; font-weight: 700;
+  color: #1D4ED8; background: #DBEAFE;
+  padding: 1px 7px; border-radius: 6px;
+}
+.tag-past {
+  font-size: 10px; font-weight: 600;
+  color: var(--text-4); background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1px 7px; border-radius: 6px;
+}
+.event-row-count {
+  font-size: 11px;
+  color: var(--text-4);
+}
+
+/* ── pending friend request row (lista amigos) ── */
+.pending-req-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pending-req-row:last-child { border-bottom: none; }
+.pending-req-info { flex: 1; min-width: 0; }
+.pending-req-name { font-size: 14px; font-weight: 600; color: var(--text-1); }
+.pending-req-sub  { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+.pending-req-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.btn-accept-sm {
+  padding: 5px 13px; border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+  background: var(--green); color: #fff;
+  border: none; cursor: pointer;
+}
+.btn-accept-sm:active { opacity: .8; }
+.btn-decline-sm {
+  padding: 5px 13px; border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+  background: transparent; color: var(--text-3);
+  border: 1.5px solid var(--border); cursor: pointer;
+}
+.btn-decline-sm:active { background: var(--surface); }
+
+/* ── sport chips row (lista participados filter) ── */
+.sport-chips-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.sport-chips-row::-webkit-scrollbar { display: none; }
